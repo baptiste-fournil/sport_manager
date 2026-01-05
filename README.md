@@ -121,7 +121,7 @@ routes/
 ## Development Roadmap
 
 - [x] Phase 0: Project setup, auth, base UI
-- [ ] Phase 1: Data models & migrations
+- [x] Phase 1: Data models & migrations
 - [ ] Phase 2: Exercise catalog CRUD
 - [ ] Phase 3: Training template builder
 - [ ] Phase 4: Start session flow

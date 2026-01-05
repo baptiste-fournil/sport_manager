@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class TrainingSession extends Model
-{
+class TrainingSession extends Model {
     protected $fillable = [
         'user_id',
         'training_id',
@@ -22,28 +21,23 @@ class TrainingSession extends Model
         'completed_at' => 'datetime',
     ];
 
-    public function user(): BelongsTo
-    {
+    public function user(): BelongsTo {
         return $this->belongsTo(User::class);
     }
 
-    public function training(): BelongsTo
-    {
+    public function training(): BelongsTo {
         return $this->belongsTo(Training::class);
     }
 
-    public function sessionExercises(): HasMany
-    {
+    public function sessionExercises(): HasMany {
         return $this->hasMany(SessionExercise::class)->orderBy('order_index');
     }
 
-    public function isCompleted(): bool
-    {
+    public function isCompleted(): bool {
         return $this->completed_at !== null;
     }
 
-    public function isInProgress(): bool
-    {
+    public function isInProgress(): bool {
         return $this->completed_at === null;
     }
 }

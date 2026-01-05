@@ -5,8 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class TrainingExercise extends Model
-{
+class TrainingExercise extends Model {
     protected $fillable = [
         'training_id',
         'exercise_id',
@@ -24,13 +23,11 @@ class TrainingExercise extends Model
         'default_rest_seconds' => 'integer',
     ];
 
-    public function training(): BelongsTo
-    {
+    public function training(): BelongsTo {
         return $this->belongsTo(Training::class);
     }
 
-    public function exercise(): BelongsTo
-    {
+    public function exercise(): BelongsTo {
         return $this->belongsTo(Exercise::class);
     }
 }

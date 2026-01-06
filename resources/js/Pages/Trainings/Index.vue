@@ -63,9 +63,7 @@ const deleteTraining = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Trainings
-            </h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Trainings</h2>
         </template>
 
         <div class="py-12">
@@ -76,9 +74,7 @@ const deleteTraining = () => {
                         <div class="mb-6 flex items-center justify-between">
                             <h3 class="text-lg font-medium">Your Training Templates</h3>
                             <Link :href="route('trainings.create')">
-                                <PrimaryButton>
-                                    Create Training
-                                </PrimaryButton>
+                                <PrimaryButton> Create Training </PrimaryButton>
                             </Link>
                         </div>
 
@@ -116,24 +112,36 @@ const deleteTraining = () => {
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                        <th
+                                            scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                        >
                                             Name
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                        <th
+                                            scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                        >
                                             Description
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                        <th
+                                            scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                        >
                                             Exercises
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                        <th
+                                            scope="col"
+                                            class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
+                                        >
                                             Actions
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white">
-                                    <tr 
-                                        v-for="training in trainings" 
-                                        :key="training.id" 
+                                    <tr
+                                        v-for="training in trainings"
+                                        :key="training.id"
                                         @click="router.visit(route('trainings.show', training.id))"
                                         class="cursor-pointer hover:bg-gray-50"
                                     >
@@ -147,12 +155,24 @@ const deleteTraining = () => {
                                                 {{ training.description || '—' }}
                                             </div>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                                            <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                                {{ training.training_exercises_count }} {{ training.training_exercises_count === 1 ? 'exercise' : 'exercises' }}
+                                        <td
+                                            class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"
+                                        >
+                                            <span
+                                                class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                                            >
+                                                {{ training.training_exercises_count }}
+                                                {{
+                                                    training.training_exercises_count === 1
+                                                        ? 'exercise'
+                                                        : 'exercises'
+                                                }}
                                             </span>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium" @click.stop>
+                                        <td
+                                            class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium"
+                                            @click.stop
+                                        >
                                             <Link
                                                 :href="route('trainings.edit', training.id)"
                                                 class="mr-4 text-indigo-600 hover:text-indigo-900"
@@ -190,13 +210,15 @@ const deleteTraining = () => {
                                 {{ hasActiveFilters ? 'No trainings found' : 'No trainings yet' }}
                             </h3>
                             <p class="mt-1 text-sm text-gray-500">
-                                {{ hasActiveFilters ? 'Try adjusting your search criteria.' : 'Get started by creating a new training template.' }}
+                                {{
+                                    hasActiveFilters
+                                        ? 'Try adjusting your search criteria.'
+                                        : 'Get started by creating a new training template.'
+                                }}
                             </p>
                             <div v-if="!hasActiveFilters" class="mt-6">
                                 <Link :href="route('trainings.create')">
-                                    <PrimaryButton>
-                                        Create Your First Training
-                                    </PrimaryButton>
+                                    <PrimaryButton> Create Your First Training </PrimaryButton>
                                 </Link>
                             </div>
                         </div>
@@ -208,24 +230,18 @@ const deleteTraining = () => {
         <!-- Delete Confirmation Modal -->
         <Modal :show="confirmingDeletion" @close="closeDeleteModal">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">
-                    Delete Training
-                </h2>
+                <h2 class="text-lg font-medium text-gray-900">Delete Training</h2>
 
                 <p class="mt-3 text-sm text-gray-600">
                     Are you sure you want to delete
-                    <span class="font-semibold">{{ trainingToDelete?.name }}</span>?
-                    This action cannot be undone.
+                    <span class="font-semibold">{{ trainingToDelete?.name }}</span
+                    >? This action cannot be undone.
                 </p>
 
                 <div class="mt-6 flex justify-end gap-3">
-                    <SecondaryButton @click="closeDeleteModal">
-                        Cancel
-                    </SecondaryButton>
+                    <SecondaryButton @click="closeDeleteModal"> Cancel </SecondaryButton>
 
-                    <DangerButton @click="deleteTraining">
-                        Delete Training
-                    </DangerButton>
+                    <DangerButton @click="deleteTraining"> Delete Training </DangerButton>
                 </div>
             </div>
         </Modal>

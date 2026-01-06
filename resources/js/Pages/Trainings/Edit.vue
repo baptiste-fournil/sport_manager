@@ -27,9 +27,7 @@ const submit = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                Edit Training
-            </h2>
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">Edit Training</h2>
         </template>
 
         <div class="py-12">
@@ -80,16 +78,15 @@ const submit = () => {
                                 ></textarea>
                                 <InputError :message="form.errors.notes" class="mt-2" />
                                 <p class="mt-1 text-sm text-gray-500">
-                                    Optional: Add notes about progression, intensity, or other details.
+                                    Optional: Add notes about progression, intensity, or other
+                                    details.
                                 </p>
                             </div>
 
                             <!-- Actions -->
                             <div class="flex items-center justify-end gap-4">
                                 <Link :href="route('trainings.show', props.training.id)">
-                                    <SecondaryButton type="button">
-                                        Cancel
-                                    </SecondaryButton>
+                                    <SecondaryButton type="button"> Cancel </SecondaryButton>
                                 </Link>
 
                                 <PrimaryButton

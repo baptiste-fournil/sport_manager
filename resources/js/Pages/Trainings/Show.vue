@@ -55,11 +55,14 @@ const addExercise = async () => {
     addExerciseErrors.value = {};
 
     try {
-        await axios.post(route('training-exercises.store', props.training.id), addExerciseForm.value);
-        
+        await axios.post(
+            route('training-exercises.store', props.training.id),
+            addExerciseForm.value
+        );
+
         // Reload the page to show the updated training
         router.reload({ only: ['training'] });
-        
+
         closeAddExerciseModal();
     } catch (error) {
         if (error.response?.data?.errors) {
@@ -110,7 +113,7 @@ const updateExercise = async () => {
             route('training-exercises.update', editingExercise.value.id),
             editExerciseForm.value
         );
-        
+
         router.reload({ only: ['training'] });
         closeEditExerciseModal();
     } catch (error) {
@@ -202,7 +205,9 @@ const availableExercises = computed(() => {
 });
 
 const selectedExerciseName = computed(() => {
-    const selected = props.exercises.find(ex => ex.id === parseInt(addExerciseForm.value.exercise_id));
+    const selected = props.exercises.find(
+        (ex) => ex.id === parseInt(addExerciseForm.value.exercise_id)
+    );
     return selected ? selected.name : '';
 });
 
@@ -228,9 +233,7 @@ const getTypeBadgeColor = (type) => {
                     {{ training.name }}
                 </h2>
                 <Link :href="route('trainings.edit', training.id)">
-                    <SecondaryButton>
-                        Edit Details
-                    </SecondaryButton>
+                    <SecondaryButton> Edit Details </SecondaryButton>
                 </Link>
             </div>
         </template>
@@ -247,7 +250,9 @@ const getTypeBadgeColor = (type) => {
                             </div>
                             <div v-if="training.notes">
                                 <h3 class="text-sm font-medium text-gray-500">Planning Notes</h3>
-                                <p class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ training.notes }}</p>
+                                <p class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
+                                    {{ training.notes }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -273,7 +278,9 @@ const getTypeBadgeColor = (type) => {
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
                                         <div class="flex items-center gap-3">
-                                            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
+                                            <span
+                                                class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white"
+                                            >
                                                 {{ index + 1 }}
                                             </span>
                                             <div>
@@ -281,7 +288,11 @@ const getTypeBadgeColor = (type) => {
                                                     {{ trainingExercise.exercise.name }}
                                                 </h4>
                                                 <span
-                                                    :class="getTypeBadgeColor(trainingExercise.exercise.type)"
+                                                    :class="
+                                                        getTypeBadgeColor(
+                                                            trainingExercise.exercise.type
+                                                        )
+                                                    "
                                                     class="mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                                                 >
                                                     {{ trainingExercise.exercise.type }}
@@ -292,20 +303,30 @@ const getTypeBadgeColor = (type) => {
                                         <div class="ml-11 mt-3 grid grid-cols-3 gap-4 text-sm">
                                             <div>
                                                 <span class="font-medium text-gray-500">Sets:</span>
-                                                <span class="ml-2 text-gray-900">{{ trainingExercise.default_sets || '—' }}</span>
+                                                <span class="ml-2 text-gray-900">{{
+                                                    trainingExercise.default_sets || '—'
+                                                }}</span>
                                             </div>
                                             <div>
                                                 <span class="font-medium text-gray-500">Reps:</span>
-                                                <span class="ml-2 text-gray-900">{{ trainingExercise.default_reps || '—' }}</span>
+                                                <span class="ml-2 text-gray-900">{{
+                                                    trainingExercise.default_reps || '—'
+                                                }}</span>
                                             </div>
                                             <div>
                                                 <span class="font-medium text-gray-500">Rest:</span>
-                                                <span class="ml-2 text-gray-900">{{ trainingExercise.default_rest_seconds }}s</span>
+                                                <span class="ml-2 text-gray-900"
+                                                    >{{
+                                                        trainingExercise.default_rest_seconds
+                                                    }}s</span
+                                                >
                                             </div>
                                         </div>
 
                                         <div v-if="trainingExercise.notes" class="ml-11 mt-2">
-                                            <p class="text-sm text-gray-600">{{ trainingExercise.notes }}</p>
+                                            <p class="text-sm text-gray-600">
+                                                {{ trainingExercise.notes }}
+                                            </p>
                                         </div>
                                     </div>
 
@@ -318,18 +339,42 @@ const getTypeBadgeColor = (type) => {
                                                 class="rounded bg-gray-200 p-1 text-gray-600 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Move up"
                                             >
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                                <svg
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M5 15l7-7 7 7"
+                                                    />
                                                 </svg>
                                             </button>
                                             <button
                                                 @click="moveExerciseDown(trainingExercise, index)"
-                                                :disabled="index === training.training_exercises.length - 1 || movingExercise"
+                                                :disabled="
+                                                    index ===
+                                                        training.training_exercises.length - 1 ||
+                                                    movingExercise
+                                                "
                                                 class="rounded bg-gray-200 p-1 text-gray-600 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Move down"
                                             >
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                <svg
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 9l-7 7-7-7"
+                                                    />
                                                 </svg>
                                             </button>
                                         </div>
@@ -383,9 +428,7 @@ const getTypeBadgeColor = (type) => {
                 <!-- Back Button -->
                 <div class="flex justify-start">
                     <Link :href="route('trainings.index')">
-                        <SecondaryButton>
-                            Back to Trainings
-                        </SecondaryButton>
+                        <SecondaryButton> Back to Trainings </SecondaryButton>
                     </Link>
                 </div>
             </div>
@@ -416,8 +459,11 @@ const getTypeBadgeColor = (type) => {
                             </option>
                         </select>
                         <InputError :message="addExerciseErrors.exercise_id?.[0]" class="mt-2" />
-                        <p v-if="availableExercises.length === 0" class="mt-2 text-sm text-amber-600">
-                            You don't have any exercises yet. 
+                        <p
+                            v-if="availableExercises.length === 0"
+                            class="mt-2 text-sm text-amber-600"
+                        >
+                            You don't have any exercises yet.
                             <Link :href="route('exercises.create')" class="font-medium underline">
                                 Create your first exercise
                             </Link>
@@ -466,7 +512,10 @@ const getTypeBadgeColor = (type) => {
                             class="mt-1 block w-full"
                             placeholder="90"
                         />
-                        <InputError :message="addExerciseErrors.default_rest_seconds?.[0]" class="mt-2" />
+                        <InputError
+                            :message="addExerciseErrors.default_rest_seconds?.[0]"
+                            class="mt-2"
+                        />
                     </div>
 
                     <!-- Notes -->
@@ -536,7 +585,10 @@ const getTypeBadgeColor = (type) => {
 
                     <!-- Default Rest -->
                     <div>
-                        <InputLabel for="edit_default_rest_seconds" value="Default Rest (seconds)" />
+                        <InputLabel
+                            for="edit_default_rest_seconds"
+                            value="Default Rest (seconds)"
+                        />
                         <TextInput
                             id="edit_default_rest_seconds"
                             v-model.number="editExerciseForm.default_rest_seconds"
@@ -545,7 +597,10 @@ const getTypeBadgeColor = (type) => {
                             max="600"
                             class="mt-1 block w-full"
                         />
-                        <InputError :message="editExerciseErrors.default_rest_seconds?.[0]" class="mt-2" />
+                        <InputError
+                            :message="editExerciseErrors.default_rest_seconds?.[0]"
+                            class="mt-2"
+                        />
                     </div>
 
                     <!-- Notes -->
@@ -588,13 +643,9 @@ const getTypeBadgeColor = (type) => {
                 </p>
 
                 <div class="mt-6 flex justify-end gap-3">
-                    <SecondaryButton @click="closeDeleteExerciseModal">
-                        Cancel
-                    </SecondaryButton>
+                    <SecondaryButton @click="closeDeleteExerciseModal"> Cancel </SecondaryButton>
 
-                    <DangerButton @click="deleteExercise">
-                        Remove Exercise
-                    </DangerButton>
+                    <DangerButton @click="deleteExercise"> Remove Exercise </DangerButton>
                 </div>
             </div>
         </Modal>

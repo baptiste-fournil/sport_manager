@@ -16,6 +16,7 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 #### Controllers
 
 **TrainingController** ([app/Http/Controllers/TrainingController.php](app/Http/Controllers/TrainingController.php))
+
 - Full RESTful CRUD operations for trainings
 - `index()` - List trainings with search and exercise count
 - `create()` - Show create form
@@ -26,6 +27,7 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 - `destroy()` - Delete training with authorization
 
 **TrainingExerciseController** ([app/Http/Controllers/TrainingExerciseController.php](app/Http/Controllers/TrainingExerciseController.php))
+
 - Manages exercises within trainings (nested resource)
 - `store()` - Add exercise to training with auto-ordering
 - `update()` - Update exercise defaults (sets, reps, rest, notes)
@@ -35,17 +37,20 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 #### Form Requests (Validation)
 
 **TrainingStoreRequest** ([app/Http/Requests/TrainingStoreRequest.php](app/Http/Requests/TrainingStoreRequest.php))
+
 - Validates: name (required, unique per user), description, notes
 - User-scoped unique validation for training names
 - Max lengths: name (255), description (1000), notes (2000)
 
 **TrainingUpdateRequest** ([app/Http/Requests/TrainingUpdateRequest.php](app/Http/Requests/TrainingUpdateRequest.php))
+
 - Same validation as store, with ignore rule for current training
 - Prevents duplicate names when updating
 
 #### Authorization
 
 **TrainingPolicy** ([app/Policies/TrainingPolicy.php](app/Policies/TrainingPolicy.php))
+
 - `viewAny()` - All authenticated users can view training list
 - `view()` - Users can only view their own trainings
 - `create()` - All authenticated users can create trainings
@@ -55,12 +60,13 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 #### Routes
 
 **web.php** ([routes/web.php](routes/web.php))
+
 - Added `Route::resource('trainings', TrainingController::class)`
 - Added nested exercise management routes:
-  - `POST /trainings/{training}/exercises` - Add exercise
-  - `PATCH /training-exercises/{trainingExercise}` - Update exercise
-  - `DELETE /training-exercises/{trainingExercise}` - Remove exercise
-  - `PATCH /trainings/{training}/exercises/reorder` - Reorder exercises
+    - `POST /trainings/{training}/exercises` - Add exercise
+    - `PATCH /training-exercises/{trainingExercise}` - Update exercise
+    - `DELETE /training-exercises/{trainingExercise}` - Remove exercise
+    - `PATCH /trainings/{training}/exercises/reorder` - Reorder exercises
 
 ---
 
@@ -69,6 +75,7 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 #### Pages
 
 **Trainings/Index.vue** ([resources/js/Pages/Trainings/Index.vue](resources/js/Pages/Trainings/Index.vue))
+
 - Displays all user trainings in a table
 - **Search functionality** - Filter by training name (server-side)
 - **Exercise count badge** - Shows number of exercises in each training
@@ -78,16 +85,18 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 - **Responsive design** - Table scrolls horizontally on mobile
 
 **Trainings/Create.vue** ([resources/js/Pages/Trainings/Create.vue](resources/js/Pages/Trainings/Create.vue))
+
 - Form to create new training templates
 - Fields:
-  - Name (required, with autofocus)
-  - Description (optional textarea)
-  - Planning Notes (optional textarea, larger for detailed notes)
+    - Name (required, with autofocus)
+    - Description (optional textarea)
+    - Planning Notes (optional textarea, larger for detailed notes)
 - Form validation with inline error messages
 - Cancel button returns to training list
 - After creation, redirects to Show page (builder)
 
 **Trainings/Edit.vue** ([resources/js/Pages/Trainings/Edit.vue](resources/js/Pages/Trainings/Edit.vue))
+
 - Form to edit training details (name, description, notes)
 - Pre-populated with current training data
 - Same fields and validation as Create form
@@ -99,48 +108,50 @@ Phase 3 successfully implements a comprehensive Training Template Builder system
 This is the core builder page with comprehensive exercise management:
 
 **Features:**
+
 1. **Training Info Display** - Shows description and planning notes
 2. **Exercise List** - Ordered display of all exercises in training with:
-   - Numbered sequence badges (1, 2, 3...)
-   - Exercise name and type badge (color-coded)
-   - Default sets, reps, rest time display
-   - Exercise-specific notes
-   - Move up/down buttons for reordering
-   - Edit and Remove actions per exercise
+    - Numbered sequence badges (1, 2, 3...)
+    - Exercise name and type badge (color-coded)
+    - Default sets, reps, rest time display
+    - Exercise-specific notes
+    - Move up/down buttons for reordering
+    - Edit and Remove actions per exercise
 
 3. **Add Exercise Modal** - Comprehensive form to add exercises:
-   - Searchable exercise dropdown (excludes already-added exercises)
-   - Default sets (number input, 1-20)
-   - Default reps (number input, 1-500)
-   - Default rest seconds (number input, 0-600)
-   - Exercise-specific notes (textarea)
-   - Link to create new exercise if catalog is exhausted
-   - Real-time validation feedback
+    - Searchable exercise dropdown (excludes already-added exercises)
+    - Default sets (number input, 1-20)
+    - Default reps (number input, 1-500)
+    - Default rest seconds (number input, 0-600)
+    - Exercise-specific notes (textarea)
+    - Link to create new exercise if catalog is exhausted
+    - Real-time validation feedback
 
 4. **Edit Exercise Modal** - Update exercise parameters:
-   - Modify sets, reps, rest time, and notes
-   - Same validation as add modal
-   - Displays exercise name in modal header
+    - Modify sets, reps, rest time, and notes
+    - Same validation as add modal
+    - Displays exercise name in modal header
 
 5. **Delete Exercise Confirmation** - Safe removal:
-   - Confirms removal with exercise name
-   - Clarifies that exercise remains in catalog
+    - Confirms removal with exercise name
+    - Clarifies that exercise remains in catalog
 
 6. **Reordering System**:
-   - Up/down arrow buttons on each exercise
-   - Buttons disabled at list boundaries (first/last)
-   - Batch reorder API call with new order_index values
-   - Disabled state during reorder operation
+    - Up/down arrow buttons on each exercise
+    - Buttons disabled at list boundaries (first/last)
+    - Batch reorder API call with new order_index values
+    - Disabled state during reorder operation
 
 7. **Empty State** - When no exercises added:
-   - Helpful illustration (SVG icon)
-   - Clear call-to-action button
+    - Helpful illustration (SVG icon)
+    - Clear call-to-action button
 
 8. **Navigation Actions**:
-   - "Edit Details" button in header (edits training info)
-   - "Back to Trainings" button at bottom
+    - "Edit Details" button in header (edits training info)
+    - "Back to Trainings" button at bottom
 
 **Technical Implementation:**
+
 - Uses axios for API calls (JSON responses)
 - Inertia partial reloads (`router.reload({ only: ['training'] })`)
 - Loads user's exercise catalog on mount
@@ -152,6 +163,7 @@ This is the core builder page with comprehensive exercise management:
 #### Navigation Updates
 
 **AuthenticatedLayout.vue** ([resources/js/Layouts/AuthenticatedLayout.vue](resources/js/Layouts/AuthenticatedLayout.vue))
+
 - Added "Trainings" link to desktop navigation
 - Added "Trainings" link to mobile navigation menu
 - Active state detection using `route().current('trainings.*')`
@@ -229,11 +241,13 @@ This is the core builder page with comprehensive exercise management:
 ### Validation Rules
 
 **Training Fields:**
+
 - `name` - Required, string, max 255 chars, unique per user
 - `description` - Nullable, string, max 1000 chars
 - `notes` - Nullable, string, max 2000 chars
 
 **TrainingExercise Fields:**
+
 - `exercise_id` - Required, must exist in exercises table
 - `default_sets` - Nullable, integer, 1-20
 - `default_reps` - Nullable, integer, 1-500
@@ -243,6 +257,7 @@ This is the core builder page with comprehensive exercise management:
 ### Database Queries
 
 **Index with Search:**
+
 ```php
 Training::where('user_id', $user->id)
     ->withCount('trainingExercises')
@@ -252,6 +267,7 @@ Training::where('user_id', $user->id)
 ```
 
 **Show with Exercises:**
+
 ```php
 $training->load([
     'trainingExercises' => fn($q) => $q->orderBy('order_index'),
@@ -260,12 +276,14 @@ $training->load([
 ```
 
 **Auto-increment order_index:**
+
 ```php
 $maxOrder = $training->trainingExercises()->max('order_index') ?? -1;
 $newExercise->order_index = $maxOrder + 1;
 ```
 
 **Batch Reorder (Transaction):**
+
 ```php
 DB::transaction(function () use ($exercises, $training) {
     foreach ($exercises as $data) {
@@ -282,28 +300,29 @@ All TrainingExercise endpoints return JSON for seamless AJAX integration:
 
 ```json
 {
-  "message": "Exercise added successfully.",
-  "training_exercise": {
-    "id": 1,
-    "training_id": 5,
-    "exercise_id": 12,
-    "order_index": 0,
-    "default_sets": 3,
-    "default_reps": 10,
-    "default_rest_seconds": 90,
-    "notes": "Focus on form",
-    "exercise": {
-      "id": 12,
-      "name": "Bench Press",
-      "type": "strength"
+    "message": "Exercise added successfully.",
+    "training_exercise": {
+        "id": 1,
+        "training_id": 5,
+        "exercise_id": 12,
+        "order_index": 0,
+        "default_sets": 3,
+        "default_reps": 10,
+        "default_rest_seconds": 90,
+        "notes": "Focus on form",
+        "exercise": {
+            "id": 12,
+            "name": "Bench Press",
+            "type": "strength"
+        }
     }
-  }
 }
 ```
 
 ### Component Reuse
 
 Leveraged existing UI components:
+
 - `TextInput` - Form text/number inputs
 - `InputLabel` - Form labels
 - `InputError` - Validation error display
@@ -320,25 +339,25 @@ Leveraged existing UI components:
 ### Backend (9 files)
 
 **Created:**
+
 1. [app/Http/Controllers/TrainingController.php](app/Http/Controllers/TrainingController.php) (107 lines)
 2. [app/Http/Controllers/TrainingExerciseController.php](app/Http/Controllers/TrainingExerciseController.php) (129 lines)
 3. [app/Http/Requests/TrainingStoreRequest.php](app/Http/Requests/TrainingStoreRequest.php) (49 lines)
 4. [app/Http/Requests/TrainingUpdateRequest.php](app/Http/Requests/TrainingUpdateRequest.php) (52 lines)
 5. [app/Policies/TrainingPolicy.php](app/Policies/TrainingPolicy.php) (48 lines)
 
-**Modified:**
-6. [routes/web.php](routes/web.php) (added training routes + nested exercise routes)
+**Modified:** 6. [routes/web.php](routes/web.php) (added training routes + nested exercise routes)
 
 ### Frontend (5 files)
 
 **Created:**
+
 1. [resources/js/Pages/Trainings/Index.vue](resources/js/Pages/Trainings/Index.vue) (226 lines)
 2. [resources/js/Pages/Trainings/Create.vue](resources/js/Pages/Trainings/Create.vue) (97 lines)
 3. [resources/js/Pages/Trainings/Edit.vue](resources/js/Pages/Trainings/Edit.vue) (101 lines)
 4. [resources/js/Pages/Trainings/Show.vue](resources/js/Pages/Trainings/Show.vue) (574 lines) - **Builder interface**
 
-**Modified:**
-5. [resources/js/Layouts/AuthenticatedLayout.vue](resources/js/Layouts/AuthenticatedLayout.vue) (added nav links)
+**Modified:** 5. [resources/js/Layouts/AuthenticatedLayout.vue](resources/js/Layouts/AuthenticatedLayout.vue) (added nav links)
 
 **Total:** 14 files (9 created, 5 modified)
 
@@ -347,6 +366,7 @@ Leveraged existing UI components:
 ## Testing Checklist
 
 ### Basic CRUD
+
 - [x] User can create new training template
 - [x] User can view list of their trainings
 - [x] User can search trainings by name
@@ -358,6 +378,7 @@ Leveraged existing UI components:
 - [x] Authorization prevents viewing/editing other users' trainings
 
 ### Exercise Builder
+
 - [x] User can add exercises from their catalog to training
 - [x] Exercise dropdown excludes already-added exercises
 - [x] User can set default sets, reps, rest time per exercise
@@ -372,6 +393,7 @@ Leveraged existing UI components:
 - [x] Link to create new exercise when catalog exhausted
 
 ### UI/UX
+
 - [x] Success messages display after create/update/delete
 - [x] Error messages display for validation failures
 - [x] Loading states during API calls
@@ -425,27 +447,32 @@ Leveraged existing UI components:
 ## Architecture Decisions
 
 ### 1. Nested Resource Pattern
+
 - Trainings use standard resource routes
 - Training exercises use nested/scoped routes
 - Clear relationship: `/trainings/{training}/exercises`
 
 ### 2. JSON API for Exercise Management
+
 - Exercise management uses JSON responses (not Inertia redirects)
 - Enables smooth AJAX interactions
 - Partial page reloads for better UX
 
 ### 3. Incremental Saves
+
 - Each exercise action saves immediately
 - No "bulk save" needed - simpler state management
 - Instant feedback and error handling
 
 ### 4. Order Index System
+
 - Uses integer `order_index` (not timestamps)
 - Allows arbitrary reordering
 - Auto-increments on addition
 - Batch updates on reorder
 
 ### 5. Modal-based Editing
+
 - Add/Edit/Delete use modals (not separate pages)
 - Keeps user in context of builder
 - Faster workflow, less navigation

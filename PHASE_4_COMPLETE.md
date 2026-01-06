@@ -20,15 +20,15 @@ Phase 4 successfully implements the "Start a Session" functionality, enabling us
 - Full session lifecycle management
 - `start()` - Display training selection page with user's trainings
 - `store()` - Create session with transaction-based copying
-  - Validates input (training_id or name required)
-  - Creates TrainingSession record with started_at timestamp
-  - Copies TrainingExercise → SessionExercise (preserving order)
-  - Supports blank sessions (null training_id)
-  - Atomic transaction for data integrity
+    - Validates input (training_id or name required)
+    - Creates TrainingSession record with started_at timestamp
+    - Copies TrainingExercise → SessionExercise (preserving order)
+    - Supports blank sessions (null training_id)
+    - Atomic transaction for data integrity
 - `show()` - Display session details with exercises and sets
-  - Eager loads relationships (training, exercises, sets)
-  - Authorization check (user owns session)
-  - Returns structured data for frontend
+    - Eager loads relationships (training, exercises, sets)
+    - Authorization check (user owns session)
+    - Returns structured data for frontend
 
 #### Form Requests (Validation)
 
@@ -61,31 +61,35 @@ Phase 4 successfully implements the "Start a Session" functionality, enabling us
 This is the main session creation interface with:
 
 **Training Template Selection:**
+
 - Card grid layout displaying user's trainings
 - Each card shows:
-  - Training name and description
-  - Exercise count badge with icon
-  - Last updated date
-  - "Start Session" button
+    - Training name and description
+    - Exercise count badge with icon
+    - Last updated date
+    - "Start Session" button
 - Hover effects for better UX (border color change, shadow)
 - Click to start session immediately
 - Sorted by updated_at (most recent first)
 
 **Blank Session Creation:**
+
 - "Start Blank Session" button in header
 - Modal dialog with form fields:
-  - Session name (required, autofocus)
-  - Notes (optional, textarea)
+    - Session name (required, autofocus)
+    - Notes (optional, textarea)
 - Form validation with inline errors
 - Submits to sessions.store endpoint
 
 **Empty State:**
+
 - Displays when no training templates exist
 - Helpful icon and messaging
 - "Create Training Template" button for convenience
 - Alternative explanation about blank sessions
 
 **Features:**
+
 - Responsive grid (1 col mobile, 2 tablet, 3 desktop)
 - Date formatting utility
 - Inertia form helper for submissions
@@ -96,6 +100,7 @@ This is the main session creation interface with:
 Displays session details and serves as landing page after session creation:
 
 **Session Info Card:**
+
 - Session name with status badge (In Progress/Completed)
 - Training template reference (if applicable)
 - Started at timestamp (formatted)
@@ -103,17 +108,20 @@ Displays session details and serves as landing page after session creation:
 - Session notes
 
 **Status Indicator:**
+
 - Yellow badge for "In Progress" sessions
 - Green badge for "Completed" sessions
 - Conditional display based on completed_at field
 
 **Phase 5 Placeholder:**
+
 - Yellow info banner for in-progress sessions
 - Explains that live logging is coming in Phase 5
 - Disabled "Continue Workout" button
 - Clear messaging about future functionality
 
 **Exercises List:**
+
 - Numbered sequence badges (1, 2, 3...)
 - Exercise name and details
 - Type badge (color-coded by exercise type)
@@ -123,11 +131,13 @@ Displays session details and serves as landing page after session creation:
 - Empty state when no exercises (for blank sessions)
 
 **Navigation:**
+
 - "Back to Dashboard" button
 - Link to view training template (if session based on template)
 - Breadcrumb-style navigation
 
 **Technical Implementation:**
+
 - Computed properties for status badge styling
 - Helper function for date formatting
 - Helper function for type badge colors
@@ -138,34 +148,37 @@ Displays session details and serves as landing page after session creation:
 Enhanced dashboard with quick actions:
 
 **Quick Actions Grid:**
+
 1. **Start Session** - Primary action
-   - Play icon (circle with play symbol)
-   - Links to sessions.start
-   - Green hover effect
-   - "Begin a new workout" subtitle
+    - Play icon (circle with play symbol)
+    - Links to sessions.start
+    - Green hover effect
+    - "Begin a new workout" subtitle
 
 2. **Exercise Catalog**
-   - Database icon
-   - Links to exercises.index
-   - "Manage your exercises" subtitle
+    - Database icon
+    - Links to exercises.index
+    - "Manage your exercises" subtitle
 
 3. **Training Templates**
-   - Clipboard icon
-   - Links to trainings.index
-   - "Build workout plans" subtitle
+    - Clipboard icon
+    - Links to trainings.index
+    - "Build workout plans" subtitle
 
 4. **Session History** (Placeholder)
-   - Bar chart icon
-   - Disabled/grayed out
-   - "Coming in Phase 6" subtitle
+    - Bar chart icon
+    - Disabled/grayed out
+    - "Coming in Phase 6" subtitle
 
 **Welcome Card:**
+
 - Welcome message
 - Brief description of app purpose
 - "Start Your First Workout" CTA button
 - Links to sessions.start
 
 **Layout:**
+
 - Responsive grid (1 col mobile, 2 tablet, 4 desktop)
 - Card-based design with hover effects
 - Icon-driven visual hierarchy
@@ -211,20 +224,20 @@ Enhanced dashboard with quick actions:
 4. JavaScript submits `training_id` via Inertia form
 5. `SessionStoreRequest` validates input
 6. `TrainingSessionController@store` executes:
-   - Begins database transaction
-   - Queries Training with eager-loaded TrainingExercises
-   - Creates TrainingSession record:
-     - `user_id` = authenticated user
-     - `training_id` = selected template
-     - `name` = copied from training.name
-     - `notes` = from request (optional)
-     - `started_at` = current timestamp
-     - `completed_at` = null (in progress)
-   - Iterates through trainingExercises:
-     - Creates SessionExercise for each
-     - Copies: exercise_id, order_index, notes
-     - Links to new session via training_session_id
-   - Commits transaction
+    - Begins database transaction
+    - Queries Training with eager-loaded TrainingExercises
+    - Creates TrainingSession record:
+        - `user_id` = authenticated user
+        - `training_id` = selected template
+        - `name` = copied from training.name
+        - `notes` = from request (optional)
+        - `started_at` = current timestamp
+        - `completed_at` = null (in progress)
+    - Iterates through trainingExercises:
+        - Creates SessionExercise for each
+        - Copies: exercise_id, order_index, notes
+        - Links to new session via training_session_id
+    - Commits transaction
 7. Redirects to `/sessions/{session}` with success message
 8. `TrainingSessionController@show` displays session stub
 9. User sees "In Progress" status and Phase 5 placeholder
@@ -237,10 +250,10 @@ Enhanced dashboard with quick actions:
 4. Form submits with `name` field (training_id = null)
 5. `SessionStoreRequest` validates (name required without training_id)
 6. `TrainingSessionController@store` executes:
-   - Begins database transaction
-   - Creates TrainingSession with user-provided name
-   - Skips exercise copying (no training_id)
-   - Commits transaction
+    - Begins database transaction
+    - Creates TrainingSession with user-provided name
+    - Skips exercise copying (no training_id)
+    - Commits transaction
 7. Redirects to `/sessions/{session}` with success message
 8. Session shows empty exercises list
 9. Phase 5 will allow adding exercises during workout
@@ -276,7 +289,7 @@ DB::transaction(function () use ($validated, $user) {
         ->where('user_id', $user->id)
         ->with(['trainingExercises' => fn($q) => $q->orderBy('order_index')])
         ->firstOrFail();
-    
+
     // Create session
     $session = TrainingSession::create([
         'user_id' => $user->id,
@@ -286,7 +299,7 @@ DB::transaction(function () use ($validated, $user) {
         'started_at' => now(),
         'completed_at' => null,
     ]);
-    
+
     // Copy exercises
     foreach ($training->trainingExercises as $te) {
         $session->sessionExercises()->create([
@@ -295,7 +308,7 @@ DB::transaction(function () use ($validated, $user) {
             'notes' => $te->notes,
         ]);
     }
-    
+
     return $session;
 });
 ```
@@ -312,7 +325,7 @@ DB::transaction(function () use ($validated, $user) {
         'started_at' => now(),
         'completed_at' => null,
     ]);
-    
+
     return $session;
 });
 ```
@@ -337,7 +350,7 @@ $session->load([
     'training_id' => [
         'nullable',
         'integer',
-        Rule::exists('trainings', 'id')->where(fn($q) => 
+        Rule::exists('trainings', 'id')->where(fn($q) =>
             $q->where('user_id', $this->user()->id)
         ),
     ],
@@ -364,7 +377,7 @@ try {
     $session = DB::transaction(function () {
         // Session creation logic
     });
-    
+
     return redirect()
         ->route('sessions.show', $session)
         ->with('success', 'Training session started successfully!');
@@ -571,6 +584,7 @@ Leveraged existing UI components:
 
 **Decision:** Use database transaction for session creation + exercise copying  
 **Rationale:**
+
 - Ensures data integrity (all-or-nothing)
 - Prevents orphaned records on failure
 - Simplifies error handling
@@ -580,6 +594,7 @@ Leveraged existing UI components:
 
 **Decision:** Set `started_at` on creation, not when user logs first set  
 **Rationale:**
+
 - Session represents intent to work out
 - Captures actual start time (not first logged set)
 - Matches user mental model ("I started my workout")
@@ -589,6 +604,7 @@ Leveraged existing UI components:
 
 **Decision:** Store `training_id` on session (nullable foreign key)  
 **Rationale:**
+
 - Enables comparison (planned vs. actual)
 - Allows "repeat last session" feature
 - Provides historical context
@@ -598,6 +614,7 @@ Leveraged existing UI components:
 
 **Decision:** Don't create empty SessionSet records during session creation  
 **Rationale:**
+
 - Keeps Phase 4 scope focused
 - Sets are user-driven (may do more/fewer than planned)
 - Simplifies transaction logic
@@ -607,6 +624,7 @@ Leveraged existing UI components:
 
 **Decision:** Copy order_index and notes, but not default_sets/reps/rest  
 **Rationale:**
+
 - Order and notes are structural/informational
 - Default sets/reps/rest are guidance (not session data)
 - TrainingExercise still available via training_id for reference
@@ -616,6 +634,7 @@ Leveraged existing UI components:
 
 **Decision:** Provide 4+ ways to start sessions  
 **Rationale:**
+
 - Reduces friction (start from any context)
 - Matches user workflows (dashboard, planning, browsing)
 - Improves discoverability
@@ -625,6 +644,7 @@ Leveraged existing UI components:
 
 **Decision:** Create basic show page in Phase 4, defer live logging to Phase 5  
 **Rationale:**
+
 - Clear phase boundaries
 - Validates redirect flow early
 - Provides landing page for testing
@@ -700,6 +720,7 @@ Phase 4 successfully delivers a robust session creation system that bridges trai
 The stub show page provides a clear foundation for Phase 5's live logging interface, with explicit messaging about upcoming functionality. Users can now instantly convert their training plans into active sessions, setting the stage for performance tracking and workout progression.
 
 **Key Metrics:**
+
 - **10 files** modified/created
 - **3 new routes** added
 - **4 entry points** for session creation

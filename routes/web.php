@@ -4,6 +4,7 @@ use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\TrainingExerciseController;
+use App\Http\Controllers\TrainingSessionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -41,6 +42,14 @@ Route::middleware('auth')->group(function () {
         ->name('training-exercises.destroy');
     Route::patch('trainings/{training}/exercises/reorder', [TrainingExerciseController::class, 'reorder'])
         ->name('training-exercises.reorder');
+
+    // Training session management
+    Route::get('sessions/start', [TrainingSessionController::class, 'start'])
+        ->name('sessions.start');
+    Route::post('sessions', [TrainingSessionController::class, 'store'])
+        ->name('sessions.store');
+    Route::get('sessions/{session}', [TrainingSessionController::class, 'show'])
+        ->name('sessions.show');
 });
 
 require __DIR__ . '/auth.php';

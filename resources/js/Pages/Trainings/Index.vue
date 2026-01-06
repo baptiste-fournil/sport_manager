@@ -56,6 +56,12 @@ const deleteTraining = () => {
         });
     }
 };
+
+const startTrainingSession = (trainingId) => {
+    useForm({
+        training_id: trainingId,
+    }).post(route('sessions.store'));
+};
 </script>
 
 <template>
@@ -173,6 +179,12 @@ const deleteTraining = () => {
                                             class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium"
                                             @click.stop
                                         >
+                                            <button
+                                                @click="startTrainingSession(training.id)"
+                                                class="mr-4 text-green-600 hover:text-green-900 font-medium"
+                                            >
+                                                Start
+                                            </button>
                                             <Link
                                                 :href="route('trainings.edit', training.id)"
                                                 class="mr-4 text-indigo-600 hover:text-indigo-900"

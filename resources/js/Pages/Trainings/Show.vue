@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -221,6 +221,13 @@ const getTypeBadgeColor = (type) => {
     };
     return colors[type] || colors.other;
 };
+
+// Start session from this training
+const startTrainingSession = () => {
+    useForm({
+        training_id: props.training.id,
+    }).post(route('sessions.store'));
+};
 </script>
 
 <template>
@@ -232,9 +239,12 @@ const getTypeBadgeColor = (type) => {
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">
                     {{ training.name }}
                 </h2>
-                <Link :href="route('trainings.edit', training.id)">
-                    <SecondaryButton> Edit Details </SecondaryButton>
-                </Link>
+                <div class="flex items-center space-x-3">
+                    <PrimaryButton @click="startTrainingSession"> Start Session </PrimaryButton>
+                    <Link :href="route('trainings.edit', training.id)">
+                        <SecondaryButton> Edit Details </SecondaryButton>
+                    </Link>
+                </div>
             </div>
         </template>
 

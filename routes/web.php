@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TrainingController;
+use App\Http\Controllers\TrainingExerciseController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -26,6 +28,19 @@ Route::middleware('auth')->group(function () {
 
     // Exercise management
     Route::resource('exercises', ExerciseController::class);
+
+    // Training management
+    Route::resource('trainings', TrainingController::class);
+
+    // Training exercise management
+    Route::post('trainings/{training}/exercises', [TrainingExerciseController::class, 'store'])
+        ->name('training-exercises.store');
+    Route::patch('training-exercises/{trainingExercise}', [TrainingExerciseController::class, 'update'])
+        ->name('training-exercises.update');
+    Route::delete('training-exercises/{trainingExercise}', [TrainingExerciseController::class, 'destroy'])
+        ->name('training-exercises.destroy');
+    Route::patch('trainings/{training}/exercises/reorder', [TrainingExerciseController::class, 'reorder'])
+        ->name('training-exercises.reorder');
 });
 
 require __DIR__ . '/auth.php';

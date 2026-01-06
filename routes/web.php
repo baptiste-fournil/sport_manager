@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SessionSetController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\TrainingExerciseController;
 use App\Http\Controllers\TrainingSessionController;
@@ -50,6 +51,18 @@ Route::middleware('auth')->group(function () {
         ->name('sessions.store');
     Route::get('sessions/{session}', [TrainingSessionController::class, 'show'])
         ->name('sessions.show');
+    Route::patch('sessions/{session}/complete', [TrainingSessionController::class, 'complete'])
+        ->name('sessions.complete');
+
+    // Session set management
+    Route::post('session-exercises/{sessionExercise}/sets', [SessionSetController::class, 'store'])
+        ->name('session-sets.store');
+    Route::patch('session-sets/{sessionSet}', [SessionSetController::class, 'update'])
+        ->name('session-sets.update');
+    Route::post('session-sets/{sessionSet}/complete', [SessionSetController::class, 'complete'])
+        ->name('session-sets.complete');
+    Route::delete('session-sets/{sessionSet}', [SessionSetController::class, 'destroy'])
+        ->name('session-sets.destroy');
 });
 
 require __DIR__ . '/auth.php';

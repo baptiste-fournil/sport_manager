@@ -120,6 +120,19 @@ class TrainingSessionController extends Controller {
       },
     ]);
 
+    // Load training exercises to get template set counts
+    $templateExercises = [];
+    if ($session->training_id) {
+      $session->training->load(['trainingExercises.exercise']);
+      foreach ($session->training->trainingExercises as $trainingExercise) {
+        $templateExercises[$trainingExercise->exercise_id] = [
+          'default_sets' => $trainingExercise->default_sets,
+          'default_reps' => $trainingExercise->default_reps,
+          'default_rest_seconds' => $trainingExercise->default_rest_seconds,
+        ];
+      }
+    }
+
     return Inertia::render('Sessions/Show', [
       'session' => [
         'id' => $session->id,
@@ -133,11 +146,17 @@ class TrainingSessionController extends Controller {
           'id' => $session->training->id,
           'name' => $session->training->name,
         ] : null,
-        'exercises' => $session->sessionExercises->map(function ($sessionExercise) {
+        'exercises' => $session->sessionExercises->map(function ($sessionExercise) use ($templateExercises) {
+          $exerciseId = $sessionExercise->exercise_id;
+          $template = $templateExercises[$exerciseId] ?? null;
+
           return [
             'id' => $sessionExercise->id,
             'order_index' => $sessionExercise->order_index,
             'notes' => $sessionExercise->notes,
+            'template_sets' => $template['default_sets'] ?? null,
+            'template_reps' => $template['default_reps'] ?? null,
+            'default_rest_seconds' => $template['default_rest_seconds'] ?? 90,
             'exercise' => [
               'id' => $sessionExercise->exercise->id,
               'name' => $sessionExercise->exercise->name,
@@ -162,5 +181,26 @@ class TrainingSessionController extends Controller {
         }),
       ],
     ]);
+  }
+
+  /**
+   * Mark a training session as completed.
+   */
+  public function complete(Request $request, TrainingSession $session) {
+    // Authorize: ensure user owns the session
+    if ($session->user_id !== $request->user()->id) {
+      abort(403, 'Unauthorized access to this session.');
+    }
+
+    // Check if already completed
+    if ($session->isCompleted()) {
+      return back()->with('info', 'Session is already completed.');
+    }
+
+    $session->update([
+      'completed_at' => now(),
+    ]);
+
+    return back()->with('success', 'Training session completed!');
   }
 }

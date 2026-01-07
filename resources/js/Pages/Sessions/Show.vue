@@ -1,14 +1,16 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ExerciseStepper from '@/Components/ExerciseStepper.vue';
+import SessionProgressFooter from '@/Components/SessionProgressFooter.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import DangerButton from '@/Components/DangerButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import RestTimer from '@/Components/RestTimer.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { computed, ref, reactive } from 'vue';
+import { Head, router } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+import { useSessionStore } from '@/Composables/useSessionStore.js';
 
 const props = defineProps({
     session: {
@@ -17,8 +19,24 @@ const props = defineProps({
     },
 });
 
-// Expanded exercises state (accordion)
-const expandedExercises = ref(new Set(props.session.exercises.map((ex) => ex.id)));
+// Initialize session store
+const {
+    session: sessionData,
+    exercises,
+    loading,
+    error,
+    isCompleted,
+    addSet,
+    updateSet,
+    deleteSet,
+    getSessionStats,
+} = useSessionStore(props.session);
+
+// Stepper state
+const currentExerciseIndex = ref(0);
+
+// Current exercise
+const currentExercise = computed(() => exercises.value[currentExerciseIndex.value] || null);
 
 // Rest timer state
 const showRestTimer = ref(false);
@@ -29,21 +47,8 @@ const previousSetId = ref(null);
 // Edit mode state
 const editingSetId = ref(null);
 
-// Set forms for each exercise (for adding new sets)
-const setForms = reactive({});
-props.session.exercises.forEach((exercise) => {
-    setForms[exercise.id] = useForm({
-        reps: '',
-        weight: '',
-        duration_seconds: '',
-        distance: '',
-        notes: '',
-        rest_seconds_actual: null,
-    });
-});
-
-// Edit form (for updating existing sets)
-const editForm = useForm({
+// Form state for adding new set
+const setForm = ref({
     reps: '',
     weight: '',
     duration_seconds: '',
@@ -51,6 +56,20 @@ const editForm = useForm({
     notes: '',
 });
 
+const setFormErrors = ref({});
+
+// Form state for editing set
+const editForm = ref({
+    reps: '',
+    weight: '',
+    duration_seconds: '',
+    distance: '',
+    notes: '',
+});
+
+const editFormErrors = ref({});
+
+// Helper functions
 const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -86,7 +105,7 @@ const getExerciseTypeBadgeClass = (type) => {
 };
 
 const sessionStatus = computed(() => {
-    if (props.session.is_completed) {
+    if (isCompleted.value) {
         return {
             text: 'Completed',
             class: 'bg-green-100 text-green-800',
@@ -103,176 +122,210 @@ const needsRepsWeight = (type) => {
     const cardioTypes = ['cardio', 'running', 'cycling'];
     return !cardioTypes.includes(type?.toLowerCase());
 };
+
 const needsDuration = (type) => {
     const cardioTypes = ['cardio', 'flexibility', 'balance', 'mobility', 'running', 'cycling'];
     return cardioTypes.includes(type?.toLowerCase());
 };
+
 const needsDistance = (type) => {
     const distanceTypes = ['cardio', 'running', 'cycling'];
     return distanceTypes.includes(type?.toLowerCase());
 };
 
-// Toggle exercise accordion
-const toggleExercise = (exerciseId) => {
-    if (expandedExercises.value.has(exerciseId)) {
-        expandedExercises.value.delete(exerciseId);
-    } else {
-        expandedExercises.value.add(exerciseId);
-    }
+// Stepper navigation
+const handleJumpTo = (index) => {
+    currentExerciseIndex.value = index;
 };
 
-// Add a new set to an exercise
-const addSet = (sessionExerciseId, exerciseType) => {
-    const form = setForms[sessionExerciseId];
+// Add a new set
+const handleAddSet = async () => {
+    if (!currentExercise.value) return;
+
+    console.log('🎯 handleAddSet called');
+    console.log('📝 Form values:', setForm.value);
+    console.log('🏋️ Current exercise:', currentExercise.value);
+
+    setFormErrors.value = {};
 
     // Calculate rest time from previous set if timer was running
+    let restSecondsActual = null;
     if (previousSetId.value && restStartTime.value) {
-        const elapsedSeconds = Math.floor((Date.now() - restStartTime.value) / 1000);
-        form.rest_seconds_actual = elapsedSeconds;
+        restSecondsActual = Math.floor((Date.now() - restStartTime.value) / 1000);
     }
 
-    form.post(route('session-sets.store', sessionExerciseId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            // Clear form
-            form.reset();
+    try {
+        const setData = {
+            reps: setForm.value.reps ? Number(setForm.value.reps) : null,
+            weight: setForm.value.weight ? Number(setForm.value.weight) : null,
+            duration_seconds: setForm.value.duration_seconds
+                ? Number(setForm.value.duration_seconds)
+                : null,
+            distance: setForm.value.distance ? Number(setForm.value.distance) : null,
+            notes: setForm.value.notes || null,
+            rest_seconds_actual: restSecondsActual,
+        };
+        console.log('📤 Sending setData:', setData);
 
-            // Reload the page data to get updated sets
-            router.reload({
-                only: ['session'],
-                preserveScroll: true,
-                onSuccess: () => {
-                    // After reload, start rest timer for next set
-                    const exercise = props.session.exercises.find(
-                        (ex) => ex.id === sessionExerciseId
-                    );
-                    if (exercise && exercise.sets.length > 0) {
-                        const latestSet = exercise.sets[exercise.sets.length - 1];
-                        previousSetId.value = latestSet.id;
-                        restStartTime.value = Date.now();
-                        restTimerSeconds.value = exercise.default_rest_seconds || 90;
-                        showRestTimer.value = true;
-                    }
-                },
-            });
-        },
-    });
+        await addSet(currentExercise.value.id, setData);
+        console.log('✅ Set added successfully');
+        console.log('📊 Current exercise sets:', currentExercise.value.sets);
+
+        // Clear form
+        setForm.value = {
+            reps: '',
+            weight: '',
+            duration_seconds: '',
+            distance: '',
+            notes: '',
+        };
+        console.log('🧹 Form cleared');
+
+        // Start rest timer
+        const sets = currentExercise.value.sets;
+        console.log('⏱️ Starting rest timer, sets:', sets);
+        if (sets.length > 0) {
+            previousSetId.value = sets[sets.length - 1].id;
+            restStartTime.value = Date.now();
+            restTimerSeconds.value = currentExercise.value.default_rest_seconds || 90;
+            showRestTimer.value = true;
+        }
+    } catch (err) {
+        if (err.response?.data?.errors) {
+            setFormErrors.value = err.response.data.errors;
+        }
+    }
 };
 
 // Start editing a set
 const startEditSet = (set) => {
     editingSetId.value = set.id;
-    editForm.reps = set.reps || '';
-    editForm.weight = set.weight || '';
-    editForm.duration_seconds = set.duration_seconds || '';
-    editForm.distance = set.distance || '';
-    editForm.notes = set.notes || '';
+    editForm.value = {
+        reps: set.reps ? String(set.reps) : '',
+        weight: set.weight ? String(set.weight) : '',
+        duration_seconds: set.duration_seconds ? String(set.duration_seconds) : '',
+        distance: set.distance ? String(set.distance) : '',
+        notes: set.notes || '',
+    };
 };
 
-// Cancel editing a set
+// Cancel editing
 const cancelEditSet = () => {
     editingSetId.value = null;
-    editForm.reset();
+    editForm.value = {
+        reps: '',
+        weight: '',
+        duration_seconds: '',
+        distance: '',
+        notes: '',
+    };
+    editFormErrors.value = {};
 };
 
-// Update an existing set
-const updateSet = (setId) => {
-    editForm.patch(route('session-sets.update', setId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            // Reload the page data to get updated sets
-            router.reload({
-                only: ['session'],
-                preserveScroll: true,
-                onSuccess: () => {
-                    editingSetId.value = null;
-                    editForm.reset();
-                },
-            });
-        },
-    });
+// Update a set
+const handleUpdateSet = async (setId) => {
+    editFormErrors.value = {};
+
+    try {
+        const setData = {
+            reps: editForm.value.reps ? Number(editForm.value.reps) : null,
+            weight: editForm.value.weight ? Number(editForm.value.weight) : null,
+            duration_seconds: editForm.value.duration_seconds
+                ? Number(editForm.value.duration_seconds)
+                : null,
+            distance: editForm.value.distance ? Number(editForm.value.distance) : null,
+            notes: editForm.value.notes || null,
+        };
+
+        await updateSet(setId, setData);
+
+        cancelEditSet();
+    } catch (err) {
+        if (err.response?.data?.errors) {
+            editFormErrors.value = err.response.data.errors;
+        }
+    }
 };
 
 // Delete a set
-const deleteSet = (setId) => {
+const handleDeleteSet = async (setId) => {
     if (!confirm('Are you sure you want to delete this set?')) return;
 
-    router.delete(route('session-sets.destroy', setId), {
-        preserveScroll: true,
-        onSuccess: () => {
-            // Reload the page data to get updated sets
-            router.reload({
-                only: ['session'],
-                preserveScroll: true,
-            });
-        },
-    });
+    try {
+        await deleteSet(setId, currentExercise.value.id);
+    } catch (err) {
+        console.error('Failed to delete set:', err);
+    }
 };
 
-// Handle rest timer completion
+// Rest timer handlers
 const handleRestComplete = () => {
-    // Timer finished naturally
     showRestTimer.value = false;
 };
 
-// Handle rest timer skip
-const handleRestSkip = (elapsedSeconds) => {
-    // Store the elapsed time if we have a previous set
+const handleRestSkip = async (elapsedSeconds) => {
+    console.log('⏭️ Rest skip triggered', { previousSetId: previousSetId.value, elapsedSeconds });
+
     if (previousSetId.value && elapsedSeconds > 0) {
-        router.patch(
-            route('session-sets.update', previousSetId.value),
-            { rest_seconds_actual: elapsedSeconds },
-            { preserveScroll: true }
-        );
+        try {
+            console.log('📝 Updating rest time for set:', previousSetId.value);
+            const result = await updateSet(previousSetId.value, {
+                rest_seconds_actual: elapsedSeconds,
+            });
+            console.log('✅ Rest time updated:', result);
+        } catch (err) {
+            console.error('❌ Failed to update rest time:', err);
+        }
     }
     showRestTimer.value = false;
 };
 
-// Close rest timer
 const closeRestTimer = () => {
     showRestTimer.value = false;
 };
 
-// Complete the session
+// Complete session
 const completeSession = () => {
     if (!confirm('Are you sure you want to complete this training session?')) return;
 
     router.patch(
-        route('sessions.complete', props.session.id),
+        route('sessions.complete', sessionData.value.id),
         {},
         {
             preserveScroll: false,
-            onSuccess: () => {
-                // Success message handled by backend
-            },
         }
     );
 };
 
 // Quick fill from previous set
-const fillFromPreviousSet = (sessionExerciseId) => {
-    const exercise = props.session.exercises.find((ex) => ex.id === sessionExerciseId);
-    if (!exercise || exercise.sets.length === 0) return;
+const fillFromPreviousSet = () => {
+    if (!currentExercise.value || currentExercise.value.sets.length === 0) return;
 
-    const lastSet = exercise.sets[exercise.sets.length - 1];
-    const form = setForms[sessionExerciseId];
-
-    form.reps = lastSet.reps || '';
-    form.weight = lastSet.weight || '';
-    form.duration_seconds = lastSet.duration_seconds || '';
-    form.distance = lastSet.distance || '';
+    const lastSet = currentExercise.value.sets[currentExercise.value.sets.length - 1];
+    setForm.value = {
+        reps: lastSet.reps ? String(lastSet.reps) : '',
+        weight: lastSet.weight ? String(lastSet.weight) : '',
+        duration_seconds: lastSet.duration_seconds ? String(lastSet.duration_seconds) : '',
+        distance: lastSet.distance ? String(lastSet.distance) : '',
+        notes: '',
+    };
 };
+
+// Watch for exercise changes to close rest timer
+watch(currentExerciseIndex, () => {
+    showRestTimer.value = false;
+});
 </script>
 
 <template>
-    <Head :title="`Session: ${session.name}`" />
+    <Head :title="`Session: ${sessionData.name}`" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                        {{ session.name }}
+                        {{ sessionData.name }}
                     </h2>
                     <div class="mt-1 flex items-center space-x-2">
                         <span
@@ -280,12 +333,12 @@ const fillFromPreviousSet = (sessionExerciseId) => {
                         >
                             {{ sessionStatus.text }}
                         </span>
-                        <span v-if="session.training" class="text-sm text-gray-600">
-                            Based on: {{ session.training.name }}
+                        <span v-if="sessionData.training" class="text-sm text-gray-600">
+                            Based on: {{ sessionData.training.name }}
                         </span>
                     </div>
                 </div>
-                <div v-if="session.is_in_progress">
+                <div v-if="!isCompleted">
                     <PrimaryButton @click="completeSession"> Finish Workout </PrimaryButton>
                 </div>
             </div>
@@ -293,589 +346,458 @@ const fillFromPreviousSet = (sessionExerciseId) => {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <!-- Session Info Card -->
-                <div class="mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <!-- Error Display -->
+                <div v-if="error" class="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-800">
+                    {{ error }}
+                </div>
+
+                <!-- Exercise Stepper Navigation -->
+                <div
+                    v-if="exercises.length > 0"
+                    class="mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg"
+                >
                     <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900">Session Details</h3>
-                        <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Started At</dt>
-                                <dd class="mt-1 text-sm text-gray-900">
-                                    {{ formatDate(session.started_at) }}
-                                </dd>
-                            </div>
-                            <div v-if="session.completed_at">
-                                <dt class="text-sm font-medium text-gray-500">Completed At</dt>
-                                <dd class="mt-1 text-sm text-gray-900">
-                                    {{ formatDate(session.completed_at) }}
-                                </dd>
-                            </div>
-                            <div v-if="session.notes" class="sm:col-span-2">
-                                <dt class="text-sm font-medium text-gray-500">Notes</dt>
-                                <dd class="mt-1 text-sm text-gray-900">
-                                    {{ session.notes }}
-                                </dd>
-                            </div>
-                        </dl>
+                        <ExerciseStepper
+                            :exercises="exercises"
+                            :current-index="currentExerciseIndex"
+                            @update:current-index="currentExerciseIndex = $event"
+                            @jump-to="handleJumpTo"
+                        />
                     </div>
                 </div>
 
-                <!-- Exercises List with Live Logging -->
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900">Exercises</h3>
-
-                        <div v-if="session.exercises.length > 0" class="mt-4 space-y-4">
-                            <div
-                                v-for="(sessionExercise, index) in session.exercises"
-                                :key="sessionExercise.id"
-                                class="rounded-lg border border-gray-200 overflow-hidden"
-                            >
-                                <!-- Exercise Header (Accordion Toggle) -->
-                                <button
-                                    @click="toggleExercise(sessionExercise.id)"
-                                    class="w-full bg-gray-50 p-4 text-left hover:bg-gray-100 transition-colors"
-                                >
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-start space-x-3">
-                                            <span
-                                                class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700"
-                                            >
-                                                {{ index + 1 }}
-                                            </span>
-                                            <div>
-                                                <h4 class="text-base font-semibold text-gray-900">
-                                                    {{ sessionExercise.exercise.name }}
-                                                </h4>
-                                                <div class="mt-1 flex items-center space-x-2">
-                                                    <span
-                                                        :class="
-                                                            getExerciseTypeBadgeClass(
-                                                                sessionExercise.exercise.type
-                                                            )
-                                                        "
-                                                    >
-                                                        {{ sessionExercise.exercise.type }}
-                                                    </span>
-                                                    <span
-                                                        v-if="sessionExercise.exercise.muscle_group"
-                                                        class="text-sm text-gray-500"
-                                                    >
-                                                        {{ sessionExercise.exercise.muscle_group }}
-                                                    </span>
-                                                    <span class="text-sm text-gray-500">
-                                                        • {{ sessionExercise.sets.length
-                                                        }}{{
-                                                            sessionExercise.template_sets
-                                                                ? `/${sessionExercise.template_sets}`
-                                                                : ''
-                                                        }}
-                                                        sets
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <svg
-                                            :class="[
-                                                'h-5 w-5 text-gray-400 transition-transform',
-                                                expandedExercises.has(sessionExercise.id)
-                                                    ? 'rotate-180'
-                                                    : '',
-                                            ]"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M19 9l-7 7-7-7"
-                                            />
-                                        </svg>
-                                    </div>
-                                </button>
-
-                                <!-- Exercise Content (Collapsible) -->
-                                <div
-                                    v-show="expandedExercises.has(sessionExercise.id)"
-                                    class="p-4 border-t border-gray-200"
-                                >
-                                    <p
-                                        v-if="sessionExercise.notes"
-                                        class="mb-4 text-sm text-gray-600 italic"
-                                    >
-                                        {{ sessionExercise.notes }}
-                                    </p>
-
-                                    <!-- Sets Table -->
-                                    <div v-if="sessionExercise.sets.length > 0" class="mb-4">
-                                        <div class="overflow-x-auto">
-                                            <table class="min-w-full divide-y divide-gray-200">
-                                                <thead class="bg-gray-50">
-                                                    <tr>
-                                                        <th
-                                                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Set
-                                                        </th>
-                                                        <th
-                                                            v-if="
-                                                                needsRepsWeight(
-                                                                    sessionExercise.exercise.type
-                                                                )
-                                                            "
-                                                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Reps
-                                                        </th>
-                                                        <th
-                                                            v-if="
-                                                                needsRepsWeight(
-                                                                    sessionExercise.exercise.type
-                                                                )
-                                                            "
-                                                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Weight
-                                                        </th>
-                                                        <th
-                                                            v-if="
-                                                                needsDuration(
-                                                                    sessionExercise.exercise.type
-                                                                )
-                                                            "
-                                                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Duration
-                                                        </th>
-                                                        <th
-                                                            v-if="
-                                                                needsDistance(
-                                                                    sessionExercise.exercise.type
-                                                                )
-                                                            "
-                                                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Distance
-                                                        </th>
-                                                        <th
-                                                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Rest
-                                                        </th>
-                                                        <th
-                                                            v-if="!session.is_completed"
-                                                            class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                                        >
-                                                            Actions
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="bg-white divide-y divide-gray-200">
-                                                    <tr
-                                                        v-for="set in sessionExercise.sets"
-                                                        :key="set.id"
-                                                        :class="
-                                                            editingSetId === set.id
-                                                                ? 'bg-blue-50'
-                                                                : ''
-                                                        "
-                                                    >
-                                                        <!-- Normal Display Mode -->
-                                                        <template v-if="editingSetId !== set.id">
-                                                            <td
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"
-                                                            >
-                                                                {{ set.set_index }}
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsRepsWeight(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"
-                                                            >
-                                                                {{ set.reps || '-' }}
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsRepsWeight(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"
-                                                            >
-                                                                {{
-                                                                    set.weight
-                                                                        ? `${set.weight} kg`
-                                                                        : '-'
-                                                                }}
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsDuration(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"
-                                                            >
-                                                                {{
-                                                                    formatTime(set.duration_seconds)
-                                                                }}
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsDistance(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"
-                                                            >
-                                                                {{
-                                                                    set.distance
-                                                                        ? `${set.distance} km`
-                                                                        : '-'
-                                                                }}
-                                                            </td>
-                                                            <td
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-500"
-                                                            >
-                                                                {{
-                                                                    formatTime(
-                                                                        set.rest_seconds_actual
-                                                                    )
-                                                                }}
-                                                            </td>
-                                                            <td
-                                                                v-if="!session.is_completed"
-                                                                class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium space-x-2"
-                                                            >
-                                                                <button
-                                                                    @click="startEditSet(set)"
-                                                                    class="text-indigo-600 hover:text-indigo-900"
-                                                                >
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    @click="deleteSet(set.id)"
-                                                                    class="text-red-600 hover:text-red-900"
-                                                                >
-                                                                    Delete
-                                                                </button>
-                                                            </td>
-                                                        </template>
-
-                                                        <!-- Edit Mode -->
-                                                        <template v-else>
-                                                            <td
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"
-                                                            >
-                                                                {{ set.set_index }}
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsRepsWeight(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2"
-                                                            >
-                                                                <TextInput
-                                                                    v-model="editForm.reps"
-                                                                    type="number"
-                                                                    class="w-20"
-                                                                    min="1"
-                                                                />
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsRepsWeight(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2"
-                                                            >
-                                                                <TextInput
-                                                                    v-model="editForm.weight"
-                                                                    type="number"
-                                                                    class="w-24"
-                                                                    step="0.5"
-                                                                    min="0"
-                                                                />
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsDuration(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2"
-                                                            >
-                                                                <TextInput
-                                                                    v-model="
-                                                                        editForm.duration_seconds
-                                                                    "
-                                                                    type="number"
-                                                                    class="w-24"
-                                                                    min="1"
-                                                                    placeholder="seconds"
-                                                                />
-                                                            </td>
-                                                            <td
-                                                                v-if="
-                                                                    needsDistance(
-                                                                        sessionExercise.exercise
-                                                                            .type
-                                                                    )
-                                                                "
-                                                                class="px-3 py-2"
-                                                            >
-                                                                <TextInput
-                                                                    v-model="editForm.distance"
-                                                                    type="number"
-                                                                    class="w-24"
-                                                                    step="0.1"
-                                                                    min="0"
-                                                                />
-                                                            </td>
-                                                            <td
-                                                                class="px-3 py-2 whitespace-nowrap text-sm text-gray-500"
-                                                            >
-                                                                {{
-                                                                    formatTime(
-                                                                        set.rest_seconds_actual
-                                                                    )
-                                                                }}
-                                                            </td>
-                                                            <td
-                                                                class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium space-x-2"
-                                                            >
-                                                                <button
-                                                                    @click="updateSet(set.id)"
-                                                                    class="text-green-600 hover:text-green-900"
-                                                                    :disabled="editForm.processing"
-                                                                >
-                                                                    Save
-                                                                </button>
-                                                                <button
-                                                                    @click="cancelEditSet"
-                                                                    class="text-gray-600 hover:text-gray-900"
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                            </td>
-                                                        </template>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <!-- Add Set Form (Only if session in progress) -->
-                                    <div
-                                        v-if="!session.is_completed"
-                                        class="mt-4 rounded-lg bg-gray-50 p-4"
-                                    >
-                                        <h5 class="text-sm font-medium text-gray-700 mb-3">
-                                            Add New Set
-                                        </h5>
-                                        <form
-                                            @submit.prevent="
-                                                addSet(
-                                                    sessionExercise.id,
-                                                    sessionExercise.exercise.type
+                <!-- Current Exercise View -->
+                <div v-if="currentExercise" class="space-y-6">
+                    <!-- Exercise Info Card -->
+                    <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h3 class="text-2xl font-bold text-gray-900">
+                                        {{ currentExercise.exercise.name }}
+                                    </h3>
+                                    <div class="mt-2 flex items-center space-x-3">
+                                        <span
+                                            :class="
+                                                getExerciseTypeBadgeClass(
+                                                    currentExercise.exercise.type
                                                 )
                                             "
-                                            class="space-y-3"
                                         >
-                                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                                <!-- Reps (for most exercises) -->
-                                                <div>
-                                                    <InputLabel for="reps" value="Reps" />
-                                                    <TextInput
-                                                        v-model="setForms[sessionExercise.id].reps"
-                                                        type="number"
-                                                        class="mt-1 w-full"
-                                                        min="1"
-                                                        placeholder="10"
-                                                    />
-                                                    <InputError
-                                                        :message="
-                                                            setForms[sessionExercise.id].errors.reps
-                                                        "
-                                                        class="mt-1"
-                                                    />
-                                                </div>
-
-                                                <!-- Weight (for strength exercises) -->
-                                                <div>
-                                                    <InputLabel for="weight" value="Weight (kg)" />
-                                                    <TextInput
-                                                        v-model="
-                                                            setForms[sessionExercise.id].weight
-                                                        "
-                                                        type="number"
-                                                        class="mt-1 w-full"
-                                                        step="0.5"
-                                                        min="0"
-                                                        placeholder="50"
-                                                    />
-                                                    <InputError
-                                                        :message="
-                                                            setForms[sessionExercise.id].errors
-                                                                .weight
-                                                        "
-                                                        class="mt-1"
-                                                    />
-                                                </div>
-
-                                                <!-- Duration (for timed exercises) -->
-                                                <div>
-                                                    <InputLabel
-                                                        for="duration"
-                                                        value="Duration (sec)"
-                                                    />
-                                                    <TextInput
-                                                        v-model="
-                                                            setForms[sessionExercise.id]
-                                                                .duration_seconds
-                                                        "
-                                                        type="number"
-                                                        class="mt-1 w-full"
-                                                        min="1"
-                                                        placeholder="60"
-                                                    />
-                                                    <InputError
-                                                        :message="
-                                                            setForms[sessionExercise.id].errors
-                                                                .duration_seconds
-                                                        "
-                                                        class="mt-1"
-                                                    />
-                                                </div>
-
-                                                <!-- Distance (for cardio exercises) -->
-                                                <div>
-                                                    <InputLabel
-                                                        for="distance"
-                                                        value="Distance (km)"
-                                                    />
-                                                    <TextInput
-                                                        v-model="
-                                                            setForms[sessionExercise.id].distance
-                                                        "
-                                                        type="number"
-                                                        class="mt-1 w-full"
-                                                        step="0.1"
-                                                        min="0"
-                                                        placeholder="5.0"
-                                                    />
-                                                    <InputError
-                                                        :message="
-                                                            setForms[sessionExercise.id].errors
-                                                                .distance
-                                                        "
-                                                        class="mt-1"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <!-- Notes -->
-                                            <div>
-                                                <InputLabel for="notes" value="Notes (optional)" />
-                                                <TextInput
-                                                    v-model="setForms[sessionExercise.id].notes"
-                                                    type="text"
-                                                    class="mt-1 w-full"
-                                                    placeholder="Felt strong, good form"
-                                                />
-                                                <InputError
-                                                    :message="
-                                                        setForms[sessionExercise.id].errors.notes
-                                                    "
-                                                    class="mt-1"
-                                                />
-                                            </div>
-
-                                            <!-- Action Buttons -->
-                                            <div class="flex items-center space-x-3">
-                                                <PrimaryButton
-                                                    type="submit"
-                                                    :disabled="
-                                                        setForms[sessionExercise.id].processing
-                                                    "
-                                                >
-                                                    Add Set
-                                                </PrimaryButton>
-                                                <SecondaryButton
-                                                    v-if="sessionExercise.sets.length > 0"
-                                                    type="button"
-                                                    @click="fillFromPreviousSet(sessionExercise.id)"
-                                                >
-                                                    Same as Last
-                                                </SecondaryButton>
-                                            </div>
-                                        </form>
+                                            {{ currentExercise.exercise.type }}
+                                        </span>
+                                        <span
+                                            v-if="currentExercise.exercise.muscle_group"
+                                            class="text-sm text-gray-600"
+                                        >
+                                            {{ currentExercise.exercise.muscle_group }}
+                                        </span>
                                     </div>
+                                    <p
+                                        v-if="currentExercise.notes"
+                                        class="mt-3 text-sm text-gray-600 italic"
+                                    >
+                                        {{ currentExercise.notes }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-gray-500">Progress</p>
+                                    <p class="text-2xl font-bold text-indigo-600">
+                                        {{ currentExercise.sets.length
+                                        }}{{
+                                            currentExercise.template_sets
+                                                ? `/${currentExercise.template_sets}`
+                                                : ''
+                                        }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">sets</p>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Empty state for exercises -->
-                        <div
-                            v-else
-                            class="mt-4 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center"
-                        >
-                            <svg
-                                class="mx-auto h-12 w-12 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                                />
-                            </svg>
-                            <h3 class="mt-2 text-sm font-semibold text-gray-900">
-                                No exercises yet
-                            </h3>
-                            <p class="mt-1 text-sm text-gray-500">
-                                This is a blank session. Add exercises during your workout.
-                            </p>
+                    <!-- Sets Table -->
+                    <div
+                        v-if="currentExercise.sets.length > 0"
+                        class="overflow-hidden bg-white shadow-sm sm:rounded-lg"
+                    >
+                        <div class="p-6">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">Completed Sets</h4>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Set
+                                            </th>
+                                            <th
+                                                v-if="
+                                                    needsRepsWeight(currentExercise.exercise.type)
+                                                "
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Reps
+                                            </th>
+                                            <th
+                                                v-if="
+                                                    needsRepsWeight(currentExercise.exercise.type)
+                                                "
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Weight
+                                            </th>
+                                            <th
+                                                v-if="needsDuration(currentExercise.exercise.type)"
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Duration
+                                            </th>
+                                            <th
+                                                v-if="needsDistance(currentExercise.exercise.type)"
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Distance
+                                            </th>
+                                            <th
+                                                class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Rest
+                                            </th>
+                                            <th
+                                                v-if="!isCompleted"
+                                                class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr
+                                            v-for="set in currentExercise.sets"
+                                            :key="set.id"
+                                            :class="[
+                                                editingSetId === set.id ? 'bg-blue-50' : '',
+                                                // Highlight template sets with a subtle background
+                                                !editingSetId &&
+                                                currentExercise.template_sets &&
+                                                set.set_index <= currentExercise.template_sets
+                                                    ? 'bg-indigo-50/30'
+                                                    : '',
+                                            ]"
+                                        >
+                                            <!-- Normal Display Mode -->
+                                            <template v-if="editingSetId !== set.id">
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900"
+                                                >
+                                                    {{ set.set_index }}
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsRepsWeight(
+                                                            currentExercise.exercise.type
+                                                        )
+                                                    "
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                                >
+                                                    {{ set.reps || '-' }}
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsRepsWeight(
+                                                            currentExercise.exercise.type
+                                                        )
+                                                    "
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                                >
+                                                    {{ set.weight ? `${set.weight} kg` : '-' }}
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsDuration(currentExercise.exercise.type)
+                                                    "
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                                >
+                                                    {{ formatTime(set.duration_seconds) }}
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsDistance(currentExercise.exercise.type)
+                                                    "
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                                                >
+                                                    {{ set.distance ? `${set.distance} km` : '-' }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"
+                                                >
+                                                    {{ formatTime(set.rest_seconds_actual) }}
+                                                </td>
+                                                <td
+                                                    v-if="!isCompleted"
+                                                    class="px-4 py-3 whitespace-nowrap text-right text-sm space-x-3"
+                                                >
+                                                    <button
+                                                        @click="startEditSet(set)"
+                                                        class="text-indigo-600 hover:text-indigo-900 font-medium"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        @click="handleDeleteSet(set.id)"
+                                                        class="text-red-600 hover:text-red-900 font-medium"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </td>
+                                            </template>
+
+                                            <!-- Edit Mode -->
+                                            <template v-else>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900"
+                                                >
+                                                    {{ set.set_index }}
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsRepsWeight(
+                                                            currentExercise.exercise.type
+                                                        )
+                                                    "
+                                                    class="px-4 py-3"
+                                                >
+                                                    <TextInput
+                                                        v-model="editForm.reps"
+                                                        type="text"
+                                                        inputmode="numeric"
+                                                        class="w-20"
+                                                    />
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsRepsWeight(
+                                                            currentExercise.exercise.type
+                                                        )
+                                                    "
+                                                    class="px-4 py-3"
+                                                >
+                                                    <TextInput
+                                                        v-model="editForm.weight"
+                                                        type="text"
+                                                        inputmode="decimal"
+                                                        class="w-24"
+                                                    />
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsDuration(currentExercise.exercise.type)
+                                                    "
+                                                    class="px-4 py-3"
+                                                >
+                                                    <TextInput
+                                                        v-model="editForm.duration_seconds"
+                                                        type="text"
+                                                        inputmode="numeric"
+                                                        class="w-24"
+                                                    />
+                                                </td>
+                                                <td
+                                                    v-if="
+                                                        needsDistance(currentExercise.exercise.type)
+                                                    "
+                                                    class="px-4 py-3"
+                                                >
+                                                    <TextInput
+                                                        v-model="editForm.distance"
+                                                        type="text"
+                                                        inputmode="decimal"
+                                                        class="w-24"
+                                                    />
+                                                </td>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"
+                                                >
+                                                    {{ formatTime(set.rest_seconds_actual) }}
+                                                </td>
+                                                <td
+                                                    class="px-4 py-3 whitespace-nowrap text-right text-sm space-x-3"
+                                                >
+                                                    <button
+                                                        @click="handleUpdateSet(set.id)"
+                                                        class="text-green-600 hover:text-green-900 font-medium"
+                                                        :disabled="loading"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        @click="cancelEditSet"
+                                                        class="text-gray-600 hover:text-gray-900 font-medium"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </td>
+                                            </template>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Set Form -->
+                    <div
+                        v-if="!isCompleted"
+                        class="overflow-hidden bg-white shadow-sm sm:rounded-lg"
+                    >
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Add New Set</h4>
+                                <button
+                                    v-if="currentExercise.sets.length > 0"
+                                    @click="fillFromPreviousSet"
+                                    class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                >
+                                    Same as Last Set
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- Reps -->
+                                <div v-if="needsRepsWeight(currentExercise.exercise.type)">
+                                    <InputLabel for="reps" value="Reps" />
+                                    <TextInput
+                                        id="reps"
+                                        v-model="setForm.reps"
+                                        type="text"
+                                        inputmode="numeric"
+                                        class="mt-1 w-full"
+                                        placeholder="10"
+                                    />
+                                    <InputError :message="setFormErrors.reps?.[0]" class="mt-1" />
+                                </div>
+
+                                <!-- Weight -->
+                                <div v-if="needsRepsWeight(currentExercise.exercise.type)">
+                                    <InputLabel for="weight" value="Weight (kg)" />
+                                    <TextInput
+                                        id="weight"
+                                        v-model="setForm.weight"
+                                        type="text"
+                                        inputmode="decimal"
+                                        class="mt-1 w-full"
+                                        placeholder="50"
+                                    />
+                                    <InputError :message="setFormErrors.weight?.[0]" class="mt-1" />
+                                </div>
+
+                                <!-- Duration -->
+                                <div v-if="needsDuration(currentExercise.exercise.type)">
+                                    <InputLabel for="duration" value="Duration (sec)" />
+                                    <TextInput
+                                        id="duration"
+                                        v-model="setForm.duration_seconds"
+                                        type="text"
+                                        inputmode="numeric"
+                                        class="mt-1 w-full"
+                                        placeholder="60"
+                                    />
+                                    <InputError
+                                        :message="setFormErrors.duration_seconds?.[0]"
+                                        class="mt-1"
+                                    />
+                                </div>
+
+                                <!-- Distance -->
+                                <div v-if="needsDistance(currentExercise.exercise.type)">
+                                    <InputLabel for="distance" value="Distance (km)" />
+                                    <TextInput
+                                        id="distance"
+                                        v-model="setForm.distance"
+                                        type="text"
+                                        inputmode="decimal"
+                                        class="mt-1 w-full"
+                                        placeholder="5.0"
+                                    />
+                                    <InputError
+                                        :message="setFormErrors.distance?.[0]"
+                                        class="mt-1"
+                                    />
+                                </div>
+
+                                <!-- Notes -->
+                                <div class="sm:col-span-2 lg:col-span-4">
+                                    <InputLabel for="notes" value="Notes (optional)" />
+                                    <TextInput
+                                        id="notes"
+                                        v-model="setForm.notes"
+                                        type="text"
+                                        class="mt-1 w-full"
+                                        placeholder="Felt strong..."
+                                    />
+                                    <InputError :message="setFormErrors.notes?.[0]" class="mt-1" />
+                                </div>
+                            </div>
+
+                            <div class="mt-6">
+                                <PrimaryButton
+                                    @click="handleAddSet"
+                                    :disabled="loading"
+                                    class="w-full sm:w-auto justify-center text-base py-3 px-8"
+                                >
+                                    <span v-if="loading">Adding...</span>
+                                    <span v-else>Add Set</span>
+                                </PrimaryButton>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Actions -->
-                <div class="mt-6 flex justify-between">
-                    <SecondaryButton @click="$inertia.visit(route('dashboard'))">
+                <!-- Empty State -->
+                <div v-else class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                    <div class="p-12 text-center">
+                        <svg
+                            class="mx-auto h-16 w-16 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
+                        </svg>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-900">
+                            No exercises in this session
+                        </h3>
+                        <p class="mt-2 text-sm text-gray-600">
+                            This is a blank session. Add exercises during your workout.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="mt-6 mb-24">
+                    <SecondaryButton @click="router.visit(route('dashboard'))">
                         Back to Dashboard
                     </SecondaryButton>
-                    <div v-if="session.training" class="text-sm text-gray-500">
-                        <Link
-                            :href="route('trainings.show', session.training.id)"
-                            class="text-indigo-600 hover:text-indigo-900"
-                        >
-                            View Training Template
-                        </Link>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Rest Timer Modal -->
+        <!-- Progress Summary Footer -->
+        <SessionProgressFooter
+            v-if="!isCompleted && exercises.length > 0"
+            :stats="getSessionStats"
+            :is-visible="!showRestTimer"
+            @finish="completeSession"
+        />
+
+        <!-- Rest Timer -->
         <RestTimer
             :show="showRestTimer"
             :target-seconds="restTimerSeconds"

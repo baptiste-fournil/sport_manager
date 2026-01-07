@@ -21,6 +21,7 @@ const isPaused = ref(false);
 const intervalId = ref(null);
 const startTime = ref(null);
 const isMinimized = ref(false);
+const maxSeconds = ref(props.targetSeconds); // Track the maximum time (including added time)
 
 // Format time as MM:SS
 const formattedTime = computed(() => {
@@ -31,7 +32,11 @@ const formattedTime = computed(() => {
 
 // Calculate progress percentage (0-100)
 const progressPercentage = computed(() => {
-    return ((props.targetSeconds - remainingSeconds.value) / props.targetSeconds) * 100;
+    // Calculate based on elapsed time from the max time seen
+    const elapsed = maxSeconds.value - remainingSeconds.value;
+    const percentage = (elapsed / maxSeconds.value) * 100;
+    // Clamp between 0 and 100
+    return Math.max(0, Math.min(100, percentage));
 });
 
 // Check if timer is complete
@@ -75,6 +80,10 @@ const skip = () => {
 // Add time to the timer
 const addTime = (seconds) => {
     remainingSeconds.value += seconds;
+    // Update maxSeconds to track the new maximum
+    if (remainingSeconds.value > maxSeconds.value) {
+        maxSeconds.value = remainingSeconds.value;
+    }
 };
 
 // Complete timer (when countdown reaches 0)
@@ -112,6 +121,7 @@ watch(
     (newShow) => {
         if (newShow) {
             remainingSeconds.value = props.targetSeconds;
+            maxSeconds.value = props.targetSeconds; // Reset max when timer starts fresh
             isPaused.value = false;
             isMinimized.value = false;
             startTimer();

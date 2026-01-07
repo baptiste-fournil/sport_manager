@@ -22,6 +22,7 @@ class UpdateSessionSetRequest extends FormRequest {
       'duration_seconds' => ['nullable', 'integer', 'min:1', 'max:86400'], // max 24 hours
       'distance' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
       'notes' => ['nullable', 'string', 'max:1000'],
+      'rest_seconds_actual' => ['nullable', 'integer', 'min:0', 'max:3600'], // max 1 hour
     ];
   }
 

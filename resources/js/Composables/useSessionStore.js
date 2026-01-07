@@ -18,7 +18,6 @@ export function useSessionStore(initialSession) {
 
     // Add a new set to an exercise
     const addSet = async (sessionExerciseId, setData) => {
-        console.log('🔵 addSet called', { sessionExerciseId, setData });
         loading.value = true;
         error.value = null;
 
@@ -27,18 +26,14 @@ export function useSessionStore(initialSession) {
                 `/api/session-exercises/${sessionExerciseId}/sets`,
                 setData
             );
-            console.log('✅ API response:', response.data);
 
             // Update the local state with the new set
             const exerciseIndex = session.value.exercises.findIndex(
                 (ex) => ex.id === sessionExerciseId
             );
-            console.log('📍 Exercise index:', exerciseIndex);
-            console.log('📊 Current exercises:', session.value.exercises);
 
             if (exerciseIndex !== -1) {
                 session.value.exercises[exerciseIndex].sets.push(response.data.set);
-                console.log('✨ Updated sets:', session.value.exercises[exerciseIndex].sets);
             } else {
                 console.error('❌ Exercise not found!');
             }
@@ -55,23 +50,17 @@ export function useSessionStore(initialSession) {
 
     // Update an existing set
     const updateSet = async (setId, setData) => {
-        console.log('🔄 updateSet called', { setId, setData });
         loading.value = true;
         error.value = null;
 
         try {
             const response = await axios.patch(`/api/session-sets/${setId}`, setData);
-            console.log('✅ Update API response:', response.data);
 
             // Update the local state with the updated set
             for (const exercise of session.value.exercises) {
                 const setIndex = exercise.sets.findIndex((s) => s.id === setId);
                 if (setIndex !== -1) {
-                    console.log('📍 Found set at index:', setIndex);
-                    console.log('🔍 Old set:', exercise.sets[setIndex]);
                     exercise.sets[setIndex] = response.data.set;
-                    console.log('✨ New set:', exercise.sets[setIndex]);
-                    console.log('📊 All sets after update:', exercise.sets);
                     break;
                 }
             }

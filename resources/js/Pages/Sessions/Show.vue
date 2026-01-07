@@ -142,10 +142,6 @@ const handleJumpTo = (index) => {
 const handleAddSet = async () => {
     if (!currentExercise.value) return;
 
-    console.log('🎯 handleAddSet called');
-    console.log('📝 Form values:', setForm.value);
-    console.log('🏋️ Current exercise:', currentExercise.value);
-
     setFormErrors.value = {};
 
     // Calculate rest time from previous set if timer was running
@@ -165,12 +161,8 @@ const handleAddSet = async () => {
             notes: setForm.value.notes || null,
             rest_seconds_actual: restSecondsActual,
         };
-        console.log('📤 Sending setData:', setData);
 
         await addSet(currentExercise.value.id, setData);
-        console.log('✅ Set added successfully');
-        console.log('📊 Current exercise sets:', currentExercise.value.sets);
-
         // Clear form
         setForm.value = {
             reps: '',
@@ -179,11 +171,9 @@ const handleAddSet = async () => {
             distance: '',
             notes: '',
         };
-        console.log('🧹 Form cleared');
 
         // Start rest timer
         const sets = currentExercise.value.sets;
-        console.log('⏱️ Starting rest timer, sets:', sets);
         if (sets.length > 0) {
             previousSetId.value = sets[sets.length - 1].id;
             restStartTime.value = Date.now();
@@ -264,15 +254,11 @@ const handleRestComplete = () => {
 };
 
 const handleRestSkip = async (elapsedSeconds) => {
-    console.log('⏭️ Rest skip triggered', { previousSetId: previousSetId.value, elapsedSeconds });
-
     if (previousSetId.value && elapsedSeconds > 0) {
         try {
-            console.log('📝 Updating rest time for set:', previousSetId.value);
             const result = await updateSet(previousSetId.value, {
                 rest_seconds_actual: elapsedSeconds,
             });
-            console.log('✅ Rest time updated:', result);
         } catch (err) {
             console.error('❌ Failed to update rest time:', err);
         }

@@ -10,102 +10,110 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class TrainingController extends Controller {
-  /**
-   * Display a listing of the user's trainings.
-   */
-  public function index(Request $request): Response {
-    $query = Training::where('user_id', $request->user()->id)
-      ->withCount('trainingExercises');
+class TrainingController extends Controller
+{
+    /**
+     * Display a listing of the user's trainings.
+     */
+    public function index(Request $request): Response
+    {
+        $query = Training::where('user_id', $request->user()->id)
+            ->withCount('trainingExercises');
 
-    // Search filter
-    if ($request->filled('search')) {
-      $query->where('name', 'like', '%' . $request->search . '%');
+        // Search filter
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%'.$request->search.'%');
+        }
+
+        $trainings = $query->orderBy('name')->get();
+
+        return Inertia::render('Trainings/Index', [
+            'trainings' => $trainings,
+            'filters' => [
+                'search' => $request->search,
+            ],
+        ]);
     }
 
-    $trainings = $query->orderBy('name')->get();
+    /**
+     * Show the form for creating a new training.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('Trainings/Create');
+    }
 
-    return Inertia::render('Trainings/Index', [
-      'trainings' => $trainings,
-      'filters' => [
-        'search' => $request->search,
-      ],
-    ]);
-  }
+    /**
+     * Store a newly created training in storage.
+     */
+    public function store(TrainingStoreRequest $request): RedirectResponse
+    {
+        $training = $request->user()->trainings()->create($request->validated());
 
-  /**
-   * Show the form for creating a new training.
-   */
-  public function create(): Response {
-    return Inertia::render('Trainings/Create');
-  }
+        return redirect()->route('trainings.show', $training)
+            ->with('success', 'Training created successfully.');
+    }
 
-  /**
-   * Store a newly created training in storage.
-   */
-  public function store(TrainingStoreRequest $request): RedirectResponse {
-    $training = $request->user()->trainings()->create($request->validated());
+    /**
+     * Display the specified training with its exercises.
+     */
+    public function show(Request $request, Training $training): Response
+    {
+        $this->authorize('view', $training);
 
-    return redirect()->route('trainings.show', $training)
-      ->with('success', 'Training created successfully.');
-  }
+        $training->load([
+            'trainingExercises' => function ($query) {
+                $query->orderBy('order_index');
+            },
+            'trainingExercises.exercise',
+        ]);
 
-  /**
-   * Display the specified training with its exercises.
-   */
-  public function show(Request $request, Training $training): Response {
-    $this->authorize('view', $training);
+        // Get user's exercises for the exercise selector
+        $exercises = $request->user()->exercises()
+            ->orderBy('name')
+            ->get();
 
-    $training->load([
-      'trainingExercises' => function ($query) {
-        $query->orderBy('order_index');
-      },
-      'trainingExercises.exercise'
-    ]);
+        return Inertia::render('Trainings/Show', [
+            'training' => $training,
+            'exercises' => $exercises,
+        ]);
+    }
 
-    // Get user's exercises for the exercise selector
-    $exercises = $request->user()->exercises()
-      ->orderBy('name')
-      ->get();
+    /**
+     * Show the form for editing the specified training.
+     */
+    public function edit(Training $training): Response
+    {
+        $this->authorize('update', $training);
 
-    return Inertia::render('Trainings/Show', [
-      'training' => $training,
-      'exercises' => $exercises,
-    ]);
-  }
+        return Inertia::render('Trainings/Edit', [
+            'training' => $training,
+        ]);
+    }
 
-  /**
-   * Show the form for editing the specified training.
-   */
-  public function edit(Training $training): Response {
-    $this->authorize('update', $training);
+    /**
+     * Update the specified training in storage.
+     */
+    public function update(TrainingUpdateRequest $request, Training $training): RedirectResponse
+    {
+        $this->authorize('update', $training);
 
-    return Inertia::render('Trainings/Edit', [
-      'training' => $training,
-    ]);
-  }
+        $training->update($request->validated());
 
-  /**
-   * Update the specified training in storage.
-   */
-  public function update(TrainingUpdateRequest $request, Training $training): RedirectResponse {
-    $this->authorize('update', $training);
+        return redirect()->route('trainings.show', $training)
+            ->with('success', 'Training updated successfully.');
+    }
 
-    $training->update($request->validated());
+    /**
+     * Remove the specified training from storage.
+     */
+    public function destroy(Training $training): RedirectResponse
+    {
+        $this->authorize('delete', $training);
 
-    return redirect()->route('trainings.show', $training)
-      ->with('success', 'Training updated successfully.');
-  }
+        $training->delete();
 
-  /**
-   * Remove the specified training from storage.
-   */
-  public function destroy(Training $training): RedirectResponse {
-    $this->authorize('delete', $training);
-
-    $training->delete();
-
-    return redirect()->route('trainings.index')
-      ->with('success', 'Training deleted successfully.');
-  }
+        return redirect()->route('trainings.index')
+            ->with('success', 'Training deleted successfully.');
+    }
 }

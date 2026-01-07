@@ -10,94 +10,102 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class ExerciseController extends Controller {
-  /**
-   * Display a listing of the exercises.
-   */
-  public function index(Request $request): Response {
-    $query = Exercise::where('user_id', $request->user()->id);
+class ExerciseController extends Controller
+{
+    /**
+     * Display a listing of the exercises.
+     */
+    public function index(Request $request): Response
+    {
+        $query = Exercise::where('user_id', $request->user()->id);
 
-    // Search by name
-    if ($request->filled('search')) {
-      $query->where('name', 'like', '%' . $request->search . '%');
+        // Search by name
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%'.$request->search.'%');
+        }
+
+        // Filter by type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $exercises = $query->orderBy('name')->get();
+
+        return Inertia::render('Exercises/Index', [
+            'exercises' => $exercises,
+            'filters' => [
+                'search' => $request->search,
+                'type' => $request->type,
+            ],
+        ]);
     }
 
-    // Filter by type
-    if ($request->filled('type')) {
-      $query->where('type', $request->type);
+    /**
+     * Show the form for creating a new exercise.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('Exercises/Create');
     }
 
-    $exercises = $query->orderBy('name')->get();
+    /**
+     * Store a newly created exercise in storage.
+     */
+    public function store(ExerciseStoreRequest $request): RedirectResponse
+    {
+        $request->user()->exercises()->create($request->validated());
 
-    return Inertia::render('Exercises/Index', [
-      'exercises' => $exercises,
-      'filters' => [
-        'search' => $request->search,
-        'type' => $request->type,
-      ],
-    ]);
-  }
+        return redirect()->route('exercises.index')
+            ->with('success', 'Exercise created successfully.');
+    }
 
-  /**
-   * Show the form for creating a new exercise.
-   */
-  public function create(): Response {
-    return Inertia::render('Exercises/Create');
-  }
+    /**
+     * Display the specified exercise.
+     */
+    public function show(Exercise $exercise): Response
+    {
+        $this->authorize('view', $exercise);
 
-  /**
-   * Store a newly created exercise in storage.
-   */
-  public function store(ExerciseStoreRequest $request): RedirectResponse {
-    $request->user()->exercises()->create($request->validated());
+        return Inertia::render('Exercises/Show', [
+            'exercise' => $exercise,
+        ]);
+    }
 
-    return redirect()->route('exercises.index')
-      ->with('success', 'Exercise created successfully.');
-  }
+    /**
+     * Show the form for editing the specified exercise.
+     */
+    public function edit(Exercise $exercise): Response
+    {
+        $this->authorize('update', $exercise);
 
-  /**
-   * Display the specified exercise.
-   */
-  public function show(Exercise $exercise): Response {
-    $this->authorize('view', $exercise);
+        return Inertia::render('Exercises/Edit', [
+            'exercise' => $exercise,
+        ]);
+    }
 
-    return Inertia::render('Exercises/Show', [
-      'exercise' => $exercise,
-    ]);
-  }
+    /**
+     * Update the specified exercise in storage.
+     */
+    public function update(ExerciseUpdateRequest $request, Exercise $exercise): RedirectResponse
+    {
+        $this->authorize('update', $exercise);
 
-  /**
-   * Show the form for editing the specified exercise.
-   */
-  public function edit(Exercise $exercise): Response {
-    $this->authorize('update', $exercise);
+        $exercise->update($request->validated());
 
-    return Inertia::render('Exercises/Edit', [
-      'exercise' => $exercise,
-    ]);
-  }
+        return redirect()->route('exercises.index')
+            ->with('success', 'Exercise updated successfully.');
+    }
 
-  /**
-   * Update the specified exercise in storage.
-   */
-  public function update(ExerciseUpdateRequest $request, Exercise $exercise): RedirectResponse {
-    $this->authorize('update', $exercise);
+    /**
+     * Remove the specified exercise from storage.
+     */
+    public function destroy(Exercise $exercise): RedirectResponse
+    {
+        $this->authorize('delete', $exercise);
 
-    $exercise->update($request->validated());
+        $exercise->delete();
 
-    return redirect()->route('exercises.index')
-      ->with('success', 'Exercise updated successfully.');
-  }
-
-  /**
-   * Remove the specified exercise from storage.
-   */
-  public function destroy(Exercise $exercise): RedirectResponse {
-    $this->authorize('delete', $exercise);
-
-    $exercise->delete();
-
-    return redirect()->route('exercises.index')
-      ->with('success', 'Exercise deleted successfully.');
-  }
+        return redirect()->route('exercises.index')
+            ->with('success', 'Exercise deleted successfully.');
+    }
 }

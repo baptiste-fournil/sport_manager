@@ -45,6 +45,8 @@ Route::middleware('auth')->group(function () {
         ->name('training-exercises.reorder');
 
     // Training session management
+    Route::get('sessions', [TrainingSessionController::class, 'index'])
+        ->name('sessions.index');
     Route::get('sessions/start', [TrainingSessionController::class, 'start'])
         ->name('sessions.start');
     Route::post('sessions', [TrainingSessionController::class, 'store'])

@@ -103,12 +103,13 @@ import { Head, Link } from '@inertiajs/vue3';
                                 <p class="mt-1 text-xs text-gray-500">Build workout plans</p>
                             </Link>
 
-                            <!-- View History (Placeholder) -->
-                            <div
-                                class="relative rounded-lg border-2 border-dashed border-gray-200 p-6 text-center opacity-50"
+                            <!-- View History -->
+                            <Link
+                                :href="route('sessions.index')"
+                                class="group relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-indigo-500 transition-colors"
                             >
                                 <svg
-                                    class="mx-auto h-12 w-12 text-gray-300"
+                                    class="mx-auto h-12 w-12 text-gray-400 group-hover:text-indigo-500"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -120,11 +121,13 @@ import { Head, Link } from '@inertiajs/vue3';
                                         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                                     />
                                 </svg>
-                                <h4 class="mt-2 text-sm font-semibold text-gray-500">
+                                <h4
+                                    class="mt-2 text-sm font-semibold text-gray-900 group-hover:text-indigo-600"
+                                >
                                     Session History
                                 </h4>
-                                <p class="mt-1 text-xs text-gray-400">Coming in Phase 6</p>
-                            </div>
+                                <p class="mt-1 text-xs text-gray-500">View past workouts</p>
+                            </Link>
                         </div>
                     </div>
                 </div>

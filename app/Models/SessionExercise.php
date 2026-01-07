@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class SessionExercise extends Model {
+class SessionExercise extends Model
+{
     protected $fillable = [
         'training_session_id',
         'exercise_id',
@@ -18,15 +19,18 @@ class SessionExercise extends Model {
         'order_index' => 'integer',
     ];
 
-    public function trainingSession(): BelongsTo {
+    public function trainingSession(): BelongsTo
+    {
         return $this->belongsTo(TrainingSession::class);
     }
 
-    public function exercise(): BelongsTo {
+    public function exercise(): BelongsTo
+    {
         return $this->belongsTo(Exercise::class);
     }
 
-    public function sessionSets(): HasMany {
+    public function sessionSets(): HasMany
+    {
         return $this->hasMany(SessionSet::class)->orderBy('set_index');
     }
 }

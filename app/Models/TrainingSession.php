@@ -40,4 +40,32 @@ class TrainingSession extends Model {
     public function isInProgress(): bool {
         return $this->completed_at === null;
     }
+
+    /**
+     * Get the session duration in minutes.
+     */
+    public function getDurationMinutes(): ?int {
+        if (! $this->completed_at || ! $this->started_at) {
+            return null;
+        }
+
+        return (int) $this->started_at->diffInMinutes($this->completed_at);
+    }
+
+    /**
+     * Get the total number of exercises in the session.
+     */
+    public function getTotalExercisesCount(): int {
+        return $this->sessionExercises()->count();
+    }
+
+    /**
+     * Get the total number of sets in the session.
+     */
+    public function getTotalSetsCount(): int {
+        return $this->sessionExercises()
+            ->withCount('sessionSets')
+            ->get()
+            ->sum('session_sets_count');
+    }
 }

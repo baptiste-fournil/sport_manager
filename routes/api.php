@@ -15,11 +15,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['web', 'auth'])->group(function () {
-  // Session Set JSON API endpoints
-  Route::post('session-exercises/{sessionExercise}/sets', [SessionSetApiController::class, 'store']);
-  Route::patch('session-sets/{sessionSet}', [SessionSetApiController::class, 'update']);
-  Route::delete('session-sets/{sessionSet}', [SessionSetApiController::class, 'destroy']);
+    // Session Set JSON API endpoints
+    Route::post('session-exercises/{sessionExercise}/sets', [SessionSetApiController::class, 'store']);
+    Route::patch('session-sets/{sessionSet}', [SessionSetApiController::class, 'update']);
+    Route::delete('session-sets/{sessionSet}', [SessionSetApiController::class, 'destroy']);
 
-  // Get session data (for refreshing without Inertia)
-  Route::get('sessions/{session}', [SessionSetApiController::class, 'getSession']);
+    // Get session data (for refreshing without Inertia)
+    Route::get('sessions/{session}', [SessionSetApiController::class, 'getSession']);
 });

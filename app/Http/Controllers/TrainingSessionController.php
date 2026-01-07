@@ -11,6 +11,54 @@ use Inertia\Inertia;
 
 class TrainingSessionController extends Controller {
   /**
+   * Display a listing of the user's training sessions.
+   */
+  public function index(Request $request) {
+    $query = TrainingSession::where('user_id', $request->user()->id)
+      ->with(['training:id,name'])
+      ->withCount([
+        'sessionExercises',
+        'sessionExercises as total_sets_count' => function ($query) {
+          $query->join('session_sets', 'session_exercises.id', '=', 'session_sets.session_exercise_id');
+        },
+      ]);
+
+    // Search by name
+    if ($request->filled('search')) {
+      $query->where('name', 'like', '%' . $request->search . '%');
+    }
+
+    // Filter by status
+    if ($request->filled('status')) {
+      if ($request->status === 'completed') {
+        $query->whereNotNull('completed_at');
+      } elseif ($request->status === 'in-progress') {
+        $query->whereNull('completed_at');
+      }
+    }
+
+    // Filter by training template
+    if ($request->filled('training_id')) {
+      $query->where('training_id', $request->training_id);
+    }
+
+    $sessions = $query->orderBy('started_at', 'desc')
+      ->paginate(12)
+      ->withQueryString();
+
+    // Get trainings for filter dropdown
+    $trainings = Training::where('user_id', $request->user()->id)
+      ->orderBy('name')
+      ->get(['id', 'name']);
+
+    return Inertia::render('Sessions/Index', [
+      'sessions' => $sessions,
+      'trainings' => $trainings,
+      'filters' => $request->only(['search', 'status', 'training_id']),
+    ]);
+  }
+
+  /**
    * Display the session start page with available trainings.
    */
   public function start(Request $request) {

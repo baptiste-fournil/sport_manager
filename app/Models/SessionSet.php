@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SessionSet extends Model {
+class SessionSet extends Model
+{
     protected $fillable = [
         'session_exercise_id',
         'set_index',
@@ -28,11 +29,13 @@ class SessionSet extends Model {
         'completed_at' => 'datetime',
     ];
 
-    public function sessionExercise(): BelongsTo {
+    public function sessionExercise(): BelongsTo
+    {
         return $this->belongsTo(SessionExercise::class);
     }
 
-    public function isCompleted(): bool {
+    public function isCompleted(): bool
+    {
         return $this->completed_at !== null;
     }
 }

@@ -8,7 +8,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import RestTimer from '@/Components/RestTimer.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import { useSessionStore } from '@/Composables/useSessionStore.js';
 
@@ -324,8 +324,13 @@ watch(currentExerciseIndex, () => {
                         </span>
                     </div>
                 </div>
-                <div v-if="!isCompleted">
-                    <PrimaryButton @click="completeSession"> Finish Workout </PrimaryButton>
+                <div class="flex items-center gap-3">
+                    <Link v-if="isCompleted" :href="route('sessions.index')">
+                        <SecondaryButton> Back to History </SecondaryButton>
+                    </Link>
+                    <PrimaryButton v-if="!isCompleted" @click="completeSession">
+                        Finish Workout
+                    </PrimaryButton>
                 </div>
             </div>
         </template>

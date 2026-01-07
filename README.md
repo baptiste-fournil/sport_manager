@@ -122,11 +122,11 @@ routes/
 
 - [x] Phase 0: Project setup, auth, base UI
 - [x] Phase 1: Data models & migrations
-- [ ] Phase 2: Exercise catalog CRUD
-- [ ] Phase 3: Training template builder
-- [ ] Phase 4: Start session flow
-- [ ] Phase 5: Live session with rest timer
-- [ ] Phase 6: Session history & review
+- [x] Phase 2: Exercise catalog CRUD
+- [x] Phase 3: Training template builder
+- [x] Phase 4: Start session flow
+- [x] Phase 5: Live session with rest timer
+- [x] Phase 6: Session history & review
 - [ ] Phase 7: Performance analytics
 - [ ] Phase 8: Production readiness
 

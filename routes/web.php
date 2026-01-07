@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ExerciseController;
+use App\Http\Controllers\ExerciseStatsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionSetController;
 use App\Http\Controllers\TrainingController;
@@ -30,6 +31,10 @@ Route::middleware('auth')->group(function () {
 
     // Exercise management
     Route::resource('exercises', ExerciseController::class);
+
+    // Exercise statistics
+    Route::get('exercises/{exercise}/stats', [ExerciseStatsController::class, 'show'])
+        ->name('exercises.stats');
 
     // Training management
     Route::resource('trainings', TrainingController::class);

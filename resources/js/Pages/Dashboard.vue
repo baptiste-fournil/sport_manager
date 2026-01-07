@@ -129,6 +129,55 @@ import { Head, Link } from '@inertiajs/vue3';
                                 <p class="mt-1 text-xs text-gray-500">View past workouts</p>
                             </Link>
                         </div>
+
+                        <!-- Performance Tracking Section -->
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <h4 class="text-base font-medium text-gray-900 mb-4">
+                                Performance Tracking
+                            </h4>
+                            <Link
+                                :href="route('exercises.index')"
+                                class="group relative flex items-center rounded-lg border-2 border-dashed border-gray-300 p-4 hover:border-indigo-500 transition-colors"
+                            >
+                                <svg
+                                    class="h-10 w-10 text-gray-400 group-hover:text-indigo-500 flex-shrink-0"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                    />
+                                </svg>
+                                <div class="ml-4 flex-1">
+                                    <h5
+                                        class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600"
+                                    >
+                                        View Progress & Analytics
+                                    </h5>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Track your performance, view personal records, and analyze
+                                        your training progress over time
+                                    </p>
+                                </div>
+                                <svg
+                                    class="h-5 w-5 text-gray-400 group-hover:text-indigo-500 flex-shrink-0"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 5l7 7-7 7"
+                                    />
+                                </svg>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 

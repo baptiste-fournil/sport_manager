@@ -254,6 +254,12 @@ const getExerciseTypeBadgeClass = (type) => {
                                         >
                                             <div class="flex justify-end space-x-2">
                                                 <Link
+                                                    :href="route('exercises.stats', exercise.id)"
+                                                    class="text-green-600 hover:text-green-900"
+                                                >
+                                                    Stats
+                                                </Link>
+                                                <Link
                                                     :href="route('exercises.edit', exercise.id)"
                                                     class="text-indigo-600 hover:text-indigo-900"
                                                 >
